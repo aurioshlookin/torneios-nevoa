@@ -1,16 +1,16 @@
-// --- App Principal ---
-// As importações são tratadas pelo Loader no index.html.
-// As variáveis globais (db, auth, React, etc.) já estão disponíveis.
+// As variáveis globais React, useState, etc. já estão no window
+// db e auth foram declarados no src/config/firebase.js que rodou antes deste código no mesmo bundle
 
-const { useState, useEffect } = React;
+// Desestrutura funções auxiliares do Firebase
 const { 
     collection, addDoc, deleteDoc, updateDoc, doc, getDoc, query, orderBy, onSnapshot 
-} = firebase.firestore;
+} = window.firebase.firestore;
+
 const { 
     signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence 
-} = firebase.auth;
+} = window.firebase.auth;
 
-// Configuração de Persistência
+// Configurar persistência
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 const App = () => {
@@ -18,6 +18,8 @@ const App = () => {
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [tournaments, setTournaments] = useState([]);
     const [loadingTournaments, setLoadingTournaments] = useState(false);
+    
+    // ... resto do código igual ...
     
     // Modais
     const [showCreate, setShowCreate] = useState(false);
