@@ -1,10 +1,20 @@
 // --- CreateModal.js ---
 
 const CreateModal = ({ onClose, onCreate }) => {
-    // Usa useState global
+    // Pega a data/hora atual no formato correto para o input (YYYY-MM-DDTHH:MM)
+    const getCurrentDateTime = () => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
+    };
+
     const [form, setForm] = useState({
-        title: '', date: '', description: '',
-        matchFormat: '1x1', structure: 'single_elim', shuffle: 'random'
+        title: '', 
+        date: getCurrentDateTime(), // Define padrão como agora
+        description: '',
+        matchFormat: '1x1', 
+        structure: 'single_elim', 
+        shuffle: 'random'
     });
 
     const [descPreview, setDescPreview] = useState(FORMAT_INFO.matches['1x1']);
@@ -29,7 +39,12 @@ const CreateModal = ({ onClose, onCreate }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onCreate(form);
+        // Formata a data para ficar mais bonita na exibição se necessário, 
+        // ou manda bruta mesmo. Aqui vamos mandar formatada levemente.
+        const dateObj = new Date(form.date);
+        const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        
+        onCreate({ ...form, date: formattedDate, rawDate: form.date });
     };
 
     return (
@@ -49,7 +64,15 @@ const CreateModal = ({ onClose, onCreate }) => {
                             </div>
                             <div>
                                 <label className="block text-xs uppercase tracking-wider text-slate-500 mb-1 font-bold ml-1">Data/Horário</label>
-                                <input type="text" id="t-date" required placeholder="Ex: Sábado às 19:00" className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 focus:border-green-500 outline-none text-white transition" onChange={handleChange} />
+                                {/* MUDANÇA: Input do tipo datetime-local */}
+                                <input 
+                                    type="datetime-local" 
+                                    id="t-date" 
+                                    required 
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 focus:border-green-500 outline-none text-white transition [color-scheme:dark]" 
+                                    value={form.date}
+                                    onChange={handleChange} 
+                                />
                             </div>
                         </div>
 
