@@ -15,6 +15,11 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- Firebase Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
     <style>
         .glass-panel { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); }
         .toast-enter { transform: translateX(100%); opacity: 0; }
@@ -24,41 +29,7 @@
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
     <div id="root"></div>
 
-    <!-- Firebase Setup Module -->
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { 
-            getAuth, signInWithCustomToken, signOut, onAuthStateChanged, 
-            setPersistence, browserLocalPersistence 
-        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { 
-            getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot 
-        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        // Expose Firebase functions globally
-        window.firebase = {
-            initializeApp,
-            auth: { 
-                getAuth, signInWithCustomToken, signOut, onAuthStateChanged, 
-                setPersistence, browserLocalPersistence 
-            },
-            firestore: { 
-                getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot 
-            }
-        };
-
-        // Expose React globals
-        window.React = React;
-        window.useState = React.useState;
-        window.useEffect = React.useEffect;
-        window.createRoot = ReactDOM.createRoot;
-
-        // Signal that dependencies are ready
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
-
-    <!-- App Loader -->
-    <script>
         const APP_VERSION = Date.now();
 
         const files = [
@@ -69,7 +40,7 @@
             'src/components/TournamentCard.js',
             'src/components/CreateModal.js',
             'src/components/DetailsModal.js',
-            'src/components/BracketsModal.js', // Confirmando presença
+            'src/components/BracketsModal.js',
             'src/components/StartModal.js',
             'src/components/SettingsModal.js',
             'src/app.js'
@@ -78,16 +49,25 @@
         async function loadApp() {
             try {
                 let combinedCode = "";
+                
+                // Header com declarações únicas
+                let bundleHeader = `
+                    const { useState, useEffect } = React;
+                    const { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } = firebase.firestore;
+                    const { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } = firebase.auth;
+                `;
 
                 for (const file of files) {
                     const res = await fetch(`${file}?v=${APP_VERSION}`);
-                    if (!res.ok) {
-                        throw new Error(`Arquivo não encontrado: ${file} (Status: ${res.status})`);
-                    }
+                    if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
                     let code = await res.text();
 
-                    // Remove imports/exports for bundle
+                    // Limpeza radical: remove qualquer linha de import ou desestruturação que conflite
+                    // Remove import lines
                     code = code.replace(/^import\s+.*$/gm, '');
+                    // Remove const { useState } = React; se existir nos arquivos
+                    code = code.replace(/const\s+\{\s*useState.*\}\s*=\s*React;/g, '');
+                    // Remove exports
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
                     code = code.replace(/export\s+\{.*?\};?/g, '');
@@ -95,7 +75,7 @@
                     combinedCode += `\n// --- ${file} ---\n${code}\n`;
                 }
 
-                const output = Babel.transform(combinedCode, { 
+                const output = Babel.transform(bundleHeader + combinedCode, { 
                     presets: ['react'],
                     filename: 'app_bundle.js' 
                 }).code;
@@ -106,23 +86,11 @@
 
             } catch (e) {
                 console.error("Loader Error:", e);
-                document.body.innerHTML = `
-                    <div class="p-10 text-red-500 text-center bg-slate-800 min-h-screen flex flex-col items-center justify-center">
-                        <i class="fas fa-bug text-4xl mb-4"></i>
-                        <h1 class="text-xl font-bold mb-2">Erro de Carregamento</h1>
-                        <p class="mb-4">${e.message}</p>
-                        <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">Tentar Novamente</button>
-                    </div>`;
+                document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro de Carregamento</h1><p>${e.message}</p></div>`;
             }
         }
-
-        // Wait for Firebase module to load before loading the app
-        window.addEventListener('firebase-ready', loadApp);
         
-        // Fallback in case event already fired (unlikely with module script order but safe)
-        if (window.firebase) {
-            loadApp();
-        }
+        loadApp();
     </script>
 </body>
 </html>
