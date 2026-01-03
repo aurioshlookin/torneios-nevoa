@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Scrollbar personalizada */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -23,141 +22,134 @@
                 <i class="fas fa-khanda text-3xl"></i>
                 <span>Torneios da Névoa</span>
             </h1>
-            
             <div id="auth-container" class="flex items-center gap-4">
-                <button id="settings-btn" class="hidden text-slate-400 hover:text-white transition p-2 rounded-full hover:bg-slate-700" title="Configurações de Permissão">
-                    <i class="fas fa-cog fa-lg"></i>
-                </button>
-
+                <button id="settings-btn" class="hidden text-slate-400 hover:text-white transition p-2" title="Configurações"><i class="fas fa-cog fa-lg"></i></button>
                 <div id="user-info" class="hidden flex items-center gap-3 bg-slate-700/50 pr-4 pl-1 py-1 rounded-full border border-slate-600">
                     <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-yellow-500">
                     <span id="username" class="font-medium text-sm"></span>
-                    <button id="logout-btn" class="text-xs text-red-400 hover:text-red-300 ml-2 border-l border-slate-600 pl-3">
-                        SAIR
-                    </button>
+                    <button id="logout-btn" class="text-xs text-red-400 hover:text-red-300 ml-2 border-l border-slate-600 pl-3">SAIR</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Modal de Configuração (Permissões) -->
+    <!-- Modal Permissões -->
     <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-slate-800 w-full max-w-lg rounded-xl border border-slate-600 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
-                <h3 class="font-bold text-lg"><i class="fas fa-user-shield text-yellow-500 mr-2"></i>Quem pode criar torneio?</h3>
-                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3 class="font-bold text-lg">Quem pode criar torneio?</h3>
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-6 overflow-y-auto flex-grow">
-                <p class="text-sm text-slate-400 mb-4">Selecione os cargos do Discord que terão permissão para acessar o painel de criação.</p>
-                <div id="roles-list-loader" class="text-center py-4"><i class="fas fa-spinner fa-spin text-yellow-500"></i> Carregando cargos do servidor...</div>
+                <div id="roles-list-loader" class="text-center py-4"><i class="fas fa-spinner fa-spin text-yellow-500"></i> Carregando...</div>
                 <div id="roles-list" class="space-y-2"></div>
             </div>
             <div class="p-4 border-t border-slate-700 bg-slate-900/50 flex justify-end">
-                <button id="save-permissions-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold transition">Salvar Permissões</button>
+                <button id="save-permissions-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold transition">Salvar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Detalhes (Justificativas) -->
+    <!-- Modal Detalhes -->
     <div id="details-modal" class="hidden fixed inset-0 bg-black/90 z-[70] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-slate-800 w-full max-w-2xl rounded-xl border border-slate-600 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
             <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
-                <h3 class="font-bold text-lg text-white"><i class="fas fa-clipboard-list text-yellow-500 mr-2"></i>Relatório de Ausências</h3>
-                <button onclick="document.getElementById('details-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3 class="font-bold text-lg"><i class="fas fa-clipboard-list text-yellow-500 mr-2"></i>Relatório</h3>
+                <button onclick="document.getElementById('details-modal').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto flex-grow">
-                <div id="details-content" class="space-y-4">
-                    <!-- Conteúdo injetado via JS -->
+            <div id="details-content" class="p-6 overflow-y-auto flex-grow space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- NOVO: Modal Iniciar Torneio -->
+    <div id="start-modal" class="hidden fixed inset-0 bg-black/90 z-[80] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-slate-800 w-full max-w-md rounded-xl border border-slate-600 shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-700 bg-slate-900/50">
+                <h3 class="font-bold text-lg text-white"><i class="fas fa-play-circle text-green-500 mr-2"></i>Iniciar Torneio</h3>
+            </div>
+            <div class="p-6 space-y-6">
+                <input type="hidden" id="start-doc-id">
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-2">Modo de Jogo</label>
+                    <select id="start-mode" class="w-full bg-slate-900 border border-slate-600 rounded p-3 focus:border-green-500 outline-none">
+                        <option value="elimination">⚔️ Eliminação Simples (Chaves)</option>
+                        <option value="battleroyale">🔥 Battle Royale (Lista Única)</option>
+                    </select>
                 </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-2">Embaralhamento</label>
+                    <select id="start-shuffle" class="w-full bg-slate-900 border border-slate-600 rounded p-3 focus:border-green-500 outline-none">
+                        <option value="random">🎲 Aleatório</option>
+                        <option value="order">📝 Ordem de Inscrição</option>
+                    </select>
+                </div>
+
+                <div class="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded text-xs text-yellow-200">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Isso encerrará as inscrições e gerará as partidas. O bot anunciará no Discord.
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-700 bg-slate-900/50 flex justify-end gap-3">
+                <button onclick="document.getElementById('start-modal').classList.add('hidden')" class="text-slate-400 hover:text-white font-bold px-4">Cancelar</button>
+                <button id="confirm-start-btn" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded font-bold shadow-lg transition">Gerar Chaves e Iniciar</button>
             </div>
         </div>
     </div>
 
-    <!-- Tela de Login -->
+    <!-- Login -->
     <div id="login-screen" class="flex-grow flex flex-col items-center justify-center p-6 text-center animate-fade-in">
         <div class="bg-slate-800 p-10 rounded-2xl shadow-2xl border border-slate-700 max-w-md w-full relative overflow-hidden">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/20 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl"></div>
             <div class="text-6xl text-yellow-500 mb-6 drop-shadow-lg"><i class="fas fa-scroll"></i></div>
             <h2 class="text-3xl font-bold mb-3">Bem-vindo à Névoa</h2>
-            <p class="text-slate-400 mb-8 leading-relaxed">Faça login com seu Discord para visualizar a agenda, confirmar presença e gerenciar os eventos ninjas.</p>
-            <button id="login-btn" class="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-3 shadow-lg group">
-                <i class="fab fa-discord text-xl group-hover:scale-110 transition"></i> Entrar com Discord
+            <p class="text-slate-400 mb-8">Faça login para gerenciar os eventos.</p>
+            <button id="login-btn" class="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-3 shadow-lg">
+                <i class="fab fa-discord text-xl"></i> Entrar com Discord
             </button>
-            <div id="loading-btn" class="hidden w-full bg-slate-700 text-slate-300 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-wait">
-                <i class="fas fa-circle-notch fa-spin"></i> Conectando...
-            </div>
+            <div id="loading-btn" class="hidden w-full bg-slate-700 text-slate-300 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-wait"><i class="fas fa-circle-notch fa-spin"></i> Conectando...</div>
         </div>
     </div>
 
-    <!-- Área Principal -->
+    <!-- App -->
     <main id="main-content" class="hidden container mx-auto p-6 flex-grow">
-        <section id="admin-panel" class="hidden mb-12 bg-gradient-to-r from-slate-800 to-slate-800/50 p-1 rounded-2xl border border-slate-700 shadow-xl relative group">
+        <section id="admin-panel" class="hidden mb-12 bg-gradient-to-r from-slate-800 to-slate-800/50 p-1 rounded-2xl border border-slate-700 shadow-xl group">
             <div class="bg-slate-900 rounded-xl p-6 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:opacity-10 transition duration-700">
-                    <i class="fas fa-dragon text-9xl text-yellow-500 transform rotate-12 translate-x-10 -translate-y-4"></i>
-                </div>
-                <h2 class="text-xl font-bold mb-6 text-green-400 flex items-center gap-2">
-                    <span class="bg-green-500/10 p-2 rounded-lg"><i class="fas fa-plus"></i></span>
-                    Agendar Evento
-                </h2>
+                <div class="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition duration-700 pointer-events-none"><i class="fas fa-dragon text-9xl text-yellow-500 transform rotate-12 translate-x-10 -translate-y-4"></i></div>
+                <h2 class="text-xl font-bold mb-6 text-green-400 flex items-center gap-2"><span class="bg-green-500/10 p-2 rounded-lg"><i class="fas fa-plus"></i></span> Agendar Evento</h2>
                 <form id="create-tournament-form" class="grid gap-6 md:grid-cols-2 relative z-10">
-                    <div class="col-span-2">
-                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1 font-bold ml-1">Título</label>
-                        <input type="text" id="t-title" required placeholder="Ex: Exame Chunin - 2ª Etapa" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1 font-bold ml-1">Data/Horário</label>
-                        <input type="text" id="t-date" placeholder="Ex: Sábado às 19:00" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 outline-none transition">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1 font-bold ml-1">Descrição</label>
-                        <textarea id="t-desc" rows="3" placeholder="Regras, local de encontro, premiação..." required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 outline-none transition"></textarea>
-                    </div>
-                    <div class="col-span-2 flex justify-end">
-                        <button type="submit" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:shadow-green-500/20 transition transform active:scale-95 flex items-center gap-2">
-                            Publicar Evento <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
+                    <div class="col-span-2"><label class="block text-xs uppercase text-slate-500 mb-1 font-bold ml-1">Título</label><input type="text" id="t-title" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 outline-none"></div>
+                    <div><label class="block text-xs uppercase text-slate-500 mb-1 font-bold ml-1">Data</label><input type="text" id="t-date" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 outline-none"></div>
+                    <div class="col-span-2"><label class="block text-xs uppercase text-slate-500 mb-1 font-bold ml-1">Descrição</label><textarea id="t-desc" rows="3" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 outline-none"></textarea></div>
+                    <div class="col-span-2 flex justify-end"><button type="submit" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:shadow-green-500/20 transition transform active:scale-95 flex items-center gap-2">Publicar <i class="fas fa-paper-plane"></i></button></div>
                 </form>
             </div>
         </section>
 
         <div class="flex items-center gap-4 mb-8">
             <h2 class="text-3xl font-bold text-white tracking-tight">Mural de Eventos</h2>
-            <div class="h-1 flex-grow bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full w-24 bg-yellow-500/50 rounded-full"></div>
-            </div>
+            <div class="h-1 flex-grow bg-slate-800 rounded-full overflow-hidden"><div class="h-full w-24 bg-yellow-500/50 rounded-full"></div></div>
             <div id="loader-tournaments" class="hidden text-yellow-500"><i class="fas fa-sync fa-spin"></i></div>
         </div>
-        
         <div id="tournaments-list" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
     </main>
 
-    <footer class="bg-slate-900 border-t border-slate-800 p-6 text-center mt-auto">
-        <p class="text-slate-500 text-sm">Sistema da Névoa &bull; Integrado ao Discord</p>
-    </footer>
+    <footer class="bg-slate-900 border-t border-slate-800 p-6 text-center mt-auto"><p class="text-slate-500 text-sm">Sistema da Névoa &bull; Integrado ao Discord</p></footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, getDoc, setDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-
+        
         const firebaseConfig = {
             apiKey: "AIzaSyBFR5q22-9AIGJYN6fFFJVV3p9LH6p5Ma8",
             authDomain: "torneios-nin.firebaseapp.com",
             projectId: "torneios-nin",
             storageBucket: "torneios-nin.firebasestorage.app",
             messagingSenderId: "466171413764",
-            appId: "1:466171413764:web:77e537310a16c391193c51",
-            measurementId: "G-L166F59V2D"
+            appId: "1:466171413764:web:77e537310a16c391193c51"
         };
-        
         const DISCORD_CLIENT_ID = "1453817939265589452"; 
         const BOT_API_URL = "https://torneionevoa.squareweb.app/auth/discord";
         const SUPER_ADMINS = ["170310660167565323", "1410456333391761462", "1410661305227935875"]; 
@@ -165,184 +157,191 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const analytics = getAnalytics(app);
-
         setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-        let currentUserRoles = []; 
-        let userHasPermission = false; // Controle global de permissão
+        let currentUserRoles = [];
+        let userHasPermission = false;
 
+        // UI Helpers
         const els = {
-            loginBtn: document.getElementById('login-btn'),
-            loadingBtn: document.getElementById('loading-btn'),
-            loginScreen: document.getElementById('login-screen'),
-            mainContent: document.getElementById('main-content'),
-            userInfo: document.getElementById('user-info'),
-            adminPanel: document.getElementById('admin-panel'),
-            settingsBtn: document.getElementById('settings-btn'),
-            settingsModal: document.getElementById('settings-modal'),
-            rolesList: document.getElementById('roles-list'),
-            savePermsBtn: document.getElementById('save-permissions-btn'),
-            detailsModal: document.getElementById('details-modal'),
-            detailsContent: document.getElementById('details-content')
+            loginBtn: document.getElementById('login-btn'), loadingBtn: document.getElementById('loading-btn'),
+            loginScreen: document.getElementById('login-screen'), mainContent: document.getElementById('main-content'),
+            userInfo: document.getElementById('user-info'), adminPanel: document.getElementById('admin-panel'),
+            settingsBtn: document.getElementById('settings-btn'), settingsModal: document.getElementById('settings-modal'),
+            rolesList: document.getElementById('roles-list'), savePermsBtn: document.getElementById('save-permissions-btn'),
+            detailsModal: document.getElementById('details-modal'), detailsContent: document.getElementById('details-content'),
+            startModal: document.getElementById('start-modal'), confirmStartBtn: document.getElementById('confirm-start-btn')
         };
 
-        els.loginBtn.addEventListener('click', () => {
-            const redirectUri = window.location.origin + window.location.pathname;
-            window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
-        });
-
+        // --- AUTH ---
+        els.loginBtn.onclick = () => window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&response_type=code&scope=identify`;
         window.addEventListener('load', async () => {
             const code = new URLSearchParams(window.location.search).get('code');
             if (code) {
-                window.history.replaceState({}, document.title, window.location.pathname);
+                window.history.replaceState({}, '', window.location.pathname);
                 toggleLoading(true);
                 try {
-                    const res = await fetch(BOT_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code, redirectUri: window.location.origin + window.location.pathname })
-                    });
+                    const res = await fetch(BOT_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, redirectUri: window.location.origin + window.location.pathname }) });
                     if (!res.ok) throw new Error(await res.text());
                     const data = await res.json();
                     localStorage.setItem('discord_roles', JSON.stringify(data.roles || []));
                     await signInWithCustomToken(auth, data.token);
-                } catch (e) {
-                    alert("Erro login: " + e.message);
-                    toggleLoading(false);
-                }
+                } catch (e) { alert("Erro login: " + e.message); toggleLoading(false); }
             }
         });
+        function toggleLoading(b) { els.loginBtn.classList.toggle('hidden', b); els.loadingBtn.classList.toggle('hidden', !b); }
+        document.getElementById('logout-btn').onclick = () => { localStorage.removeItem('discord_roles'); signOut(auth); };
 
-        function toggleLoading(isLoading) {
-            els.loginBtn.classList.toggle('hidden', isLoading);
-            els.loadingBtn.classList.toggle('hidden', !isLoading);
-        }
-
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('discord_roles');
-            signOut(auth);
-        });
-
-        onAuthStateChanged(auth, async (user) => {
+        onAuthStateChanged(auth, async u => {
             toggleLoading(false);
-            if (user) {
-                els.loginScreen.classList.add('hidden');
-                els.mainContent.classList.remove('hidden');
-                els.userInfo.classList.remove('hidden');
-                document.getElementById('username').innerText = user.displayName;
-                document.getElementById('user-avatar').src = user.photoURL;
-
-                try { currentUserRoles = JSON.parse(localStorage.getItem('discord_roles') || "[]"); } catch(e) { currentUserRoles = []; }
-
-                await checkPermissions(user.uid);
+            if (u) {
+                els.loginScreen.classList.add('hidden'); els.mainContent.classList.remove('hidden'); els.userInfo.classList.remove('hidden');
+                document.getElementById('username').innerText = u.displayName; document.getElementById('user-avatar').src = u.photoURL;
+                try { currentUserRoles = JSON.parse(localStorage.getItem('discord_roles') || "[]"); } catch(e) {}
+                await checkPermissions(u.uid);
                 startTournamentListener();
-
-                if (SUPER_ADMINS.includes(user.uid)) {
-                    els.settingsBtn.classList.remove('hidden');
-                    els.settingsBtn.onclick = openSettingsModal;
-                }
+                if (SUPER_ADMINS.includes(u.uid)) { els.settingsBtn.classList.remove('hidden'); els.settingsBtn.onclick = openSettingsModal; }
             } else {
-                els.loginScreen.classList.remove('hidden');
-                els.mainContent.classList.add('hidden');
-                els.userInfo.classList.add('hidden');
-                els.adminPanel.classList.add('hidden');
-                els.settingsBtn.classList.add('hidden');
+                els.loginScreen.classList.remove('hidden'); els.mainContent.classList.add('hidden'); els.userInfo.classList.add('hidden');
+                els.adminPanel.classList.add('hidden'); els.settingsBtn.classList.add('hidden');
             }
         });
 
-        async function checkPermissions(userId) {
-            userHasPermission = false;
-            if (SUPER_ADMINS.includes(userId)) {
-                userHasPermission = true;
-                els.adminPanel.classList.remove('hidden');
-                return;
+        async function checkPermissions(uid) {
+            userHasPermission = SUPER_ADMINS.includes(uid);
+            if (!userHasPermission) {
+                const s = await getDoc(doc(db, "config", "permissions"));
+                if (s.exists()) userHasPermission = currentUserRoles.some(r => (s.data().allowed_create_roles || []).includes(r));
             }
-            try {
-                const docSnap = await getDoc(doc(db, "config", "permissions"));
-                if (docSnap.exists()) {
-                    const allowedRoles = docSnap.data().allowed_create_roles || [];
-                    userHasPermission = currentUserRoles.some(roleId => allowedRoles.includes(roleId));
-                    if (userHasPermission) els.adminPanel.classList.remove('hidden');
-                    else els.adminPanel.classList.add('hidden');
-                }
-            } catch (e) { console.error("Erro check permissions:", e); }
+            els.adminPanel.classList.toggle('hidden', !userHasPermission);
         }
 
+        // --- SETTINGS ---
         async function openSettingsModal() {
             els.settingsModal.classList.remove('hidden');
-            const loader = document.getElementById('roles-list-loader');
-            const rolesSnap = await getDoc(doc(db, "config", "discord_roles"));
-            const permsSnap = await getDoc(doc(db, "config", "permissions"));
-            const currentAllowed = permsSnap.exists() ? (permsSnap.data().allowed_create_roles || []) : [];
-            loader.classList.add('hidden');
-            els.rolesList.innerHTML = "";
-
+            document.getElementById('roles-list-loader').classList.remove('hidden'); els.rolesList.innerHTML = "";
+            const [rolesSnap, permsSnap] = await Promise.all([getDoc(doc(db, "config", "discord_roles")), getDoc(doc(db, "config", "permissions"))]);
+            const allowed = permsSnap.exists() ? (permsSnap.data().allowed_create_roles || []) : [];
+            document.getElementById('roles-list-loader').classList.add('hidden');
             if (rolesSnap.exists()) {
-                const roles = rolesSnap.data().list || [];
-                roles.forEach(role => {
-                    const isChecked = currentAllowed.includes(role.id) ? 'checked' : '';
-                    if (role.name === '@everyone') return;
-                    els.rolesList.innerHTML += `
-                        <label class="flex items-center p-3 rounded hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-slate-600 transition">
-                            <input type="checkbox" class="role-checkbox w-5 h-5 rounded border-slate-600 text-green-600 focus:ring-offset-slate-800" value="${role.id}" ${isChecked}>
-                            <span class="ml-3 font-medium" style="color: ${role.color !== '#000000' ? role.color : '#e2e8f0'}">${role.name}</span>
-                        </label>`;
+                rolesSnap.data().list.forEach(r => {
+                    if (r.name !== '@everyone') els.rolesList.innerHTML += `<label class="flex items-center p-3 rounded hover:bg-slate-700/50 cursor-pointer"><input type="checkbox" class="role-checkbox w-5 h-5 rounded text-green-600" value="${r.id}" ${allowed.includes(r.id)?'checked':''}><span class="ml-3 font-medium" style="color:${r.color}">${r.name}</span></label>`;
                 });
-            } else {
-                els.rolesList.innerHTML = "<p class='text-red-400'>O Bot ainda não sincronizou os cargos. Reinicie o Bot.</p>";
-            }
+            } else els.rolesList.innerHTML = "<p class='text-red-400'>Sem cargos. Reinicie o Bot.</p>";
         }
-
-        els.savePermsBtn.addEventListener('click', async () => {
-            const checkboxes = document.querySelectorAll('.role-checkbox:checked');
-            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+        els.savePermsBtn.onclick = async () => {
+            const ids = Array.from(document.querySelectorAll('.role-checkbox:checked')).map(c => c.value);
             els.savePermsBtn.innerText = "Salvando...";
-            await setDoc(doc(db, "config", "permissions"), { allowed_create_roles: selectedIds }, { merge: true });
-            els.savePermsBtn.innerText = "Salvo!";
-            setTimeout(() => {
-                els.savePermsBtn.innerText = "Salvar Permissões";
-                els.settingsModal.classList.add('hidden');
-                if (auth.currentUser) checkPermissions(auth.currentUser.uid);
-            }, 1000);
-        });
+            await setDoc(doc(db, "config", "permissions"), { allowed_create_roles: ids }, { merge: true });
+            els.savePermsBtn.innerText = "Salvo!"; setTimeout(() => { els.savePermsBtn.innerText = "Salvar"; els.settingsModal.classList.add('hidden'); if(auth.currentUser) checkPermissions(auth.currentUser.uid); }, 1000);
+        };
 
-        const createForm = document.getElementById('create-tournament-form');
-        createForm.addEventListener('submit', async (e) => {
+        // --- CREATE ---
+        document.getElementById('create-tournament-form').onsubmit = async (e) => {
             e.preventDefault();
-            const btn = createForm.querySelector('button');
-            const oldText = btn.innerHTML;
-            btn.disabled = true; 
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
+            const btn = e.target.querySelector('button'); const old = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
             try {
                 await addDoc(collection(db, "tournaments"), {
-                    title: document.getElementById('t-title').value,
-                    date: document.getElementById('t-date').value,
-                    description: document.getElementById('t-desc').value,
-                    status: "pending",
-                    createdAt: new Date(),
-                    createdBy: auth.currentUser.uid,
-                    participants: []
+                    title: document.getElementById('t-title').value, date: document.getElementById('t-date').value,
+                    description: document.getElementById('t-desc').value, status: "pending",
+                    createdAt: new Date(), createdBy: auth.currentUser.uid, participants: []
                 });
-                alert("Sucesso! O Bot postará em breve.");
-                createForm.reset();
-            } catch (e) { alert("Erro: " + e.message); }
-            finally { btn.disabled = false; btn.innerHTML = oldText; }
-        });
+                alert("Criado!"); e.target.reset();
+            } catch (err) { alert(err.message); }
+            finally { btn.disabled = false; btn.innerHTML = old; }
+        };
 
+        // --- ACTIONS (DELETE & START) ---
+        window.deleteTournament = async (id) => {
+            if(!confirm("Tem certeza? Isso apagará o torneio do site e do Discord.")) return;
+            try { await deleteDoc(doc(db, "tournaments", id)); } catch(e) { alert("Erro: " + e.message); }
+        };
+
+        window.openStartModal = (id) => {
+            document.getElementById('start-doc-id').value = id;
+            els.startModal.classList.remove('hidden');
+        };
+
+        els.confirmStartBtn.onclick = async () => {
+            const id = document.getElementById('start-doc-id').value;
+            const mode = document.getElementById('start-mode').value;
+            const shuffleType = document.getElementById('start-shuffle').value;
+            
+            els.confirmStartBtn.innerText = "Gerando..."; els.confirmStartBtn.disabled = true;
+            
+            try {
+                const docRef = doc(db, "tournaments", id);
+                const snap = await getDoc(docRef);
+                if (!snap.exists()) throw new Error("Torneio não existe.");
+                
+                // Pega confirmados
+                let players = (snap.data().participants || [])
+                    .filter(p => p.status === 'confirmed')
+                    .map(p => ({ id: p.id, name: p.name }));
+                
+                if (players.length < 2) throw new Error("Mínimo de 2 participantes confirmados para iniciar.");
+
+                // Embaralhamento
+                if (shuffleType === 'random') {
+                    for (let i = players.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [players[i], players[j]] = [players[j], players[i]];
+                    }
+                }
+
+                // Gera Chaves (Se for eliminação)
+                let matches = [];
+                if (mode === 'elimination') {
+                    // Se impar, o último passa direto (Bye)
+                    const totalMatches = Math.floor(players.length / 2);
+                    for(let i=0; i<totalMatches; i++) {
+                        matches.push({
+                            round: 1,
+                            matchId: i+1,
+                            p1: players[i*2],
+                            p2: players[i*2+1],
+                            winner: null
+                        });
+                    }
+                    if (players.length % 2 !== 0) {
+                        matches.push({
+                            round: 1,
+                            matchId: totalMatches + 1,
+                            p1: players[players.length - 1],
+                            p2: null, // Bye
+                            winner: players[players.length - 1].id, // Auto win
+                            note: "Passou direto (Bye)"
+                        });
+                    }
+                }
+
+                // Salva no Banco
+                await updateDoc(docRef, {
+                    status: 'started',
+                    startedAt: new Date(),
+                    mode: mode,
+                    matches: matches,
+                    finalParticipants: players // Salva a lista final ordenada/embaralhada
+                });
+                
+                els.startModal.classList.add('hidden');
+                alert("Torneio Iniciado! As chaves foram geradas.");
+
+            } catch(e) { alert("Erro: " + e.message); }
+            finally { els.confirmStartBtn.innerText = "Gerar Chaves e Iniciar"; els.confirmStartBtn.disabled = false; }
+        };
+
+        // --- LISTENER ---
         function startTournamentListener() {
             const list = document.getElementById('tournaments-list');
-            const loader = document.getElementById('loader-tournaments');
-            loader.classList.remove('hidden');
-            const q = query(collection(db, "tournaments"), orderBy("createdAt", "desc"));
-
-            onSnapshot(q, snapshot => {
-                loader.classList.add('hidden');
+            document.getElementById('loader-tournaments').classList.remove('hidden');
+            
+            onSnapshot(query(collection(db, "tournaments"), orderBy("createdAt", "desc")), snapshot => {
+                document.getElementById('loader-tournaments').classList.add('hidden');
                 list.innerHTML = "";
-                if (snapshot.empty) {
-                    list.innerHTML = `<div class="col-span-full text-center text-slate-500 py-10">Nenhum evento encontrado.</div>`;
-                    return;
-                }
+                if (snapshot.empty) return list.innerHTML = `<div class="col-span-full text-center text-slate-500 py-10">Nenhum evento.</div>`;
+
                 snapshot.forEach(doc => {
                     const d = doc.data();
                     if(d.status === 'finished') return;
@@ -351,78 +350,60 @@
                     const maybe = (d.participants||[]).filter(p=>p.status==='maybe').length;
                     const declined = (d.participants||[]).filter(p=>p.status==='declined').length;
                     
-                    const statusTag = d.status === 'pending' 
-                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 animate-pulse">PROCESSANDO</span>`
-                        : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">ABERTO</span>`;
+                    let statusTag = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">ABERTO</span>`;
+                    if (d.status === 'pending') statusTag = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-500 animate-pulse">PROCESSANDO</span>`;
+                    if (d.status === 'started') statusTag = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">🔴 EM ANDAMENTO</span>`;
 
-                    // Botão de Detalhes (Só aparece para quem tem permissão)
-                    const detailsBtn = userHasPermission 
-                        ? `<button onclick="window.showDetails('${doc.id}')" class="text-xs text-slate-400 hover:text-white underline mt-2 block w-full text-right">Ver justificativas</button>` 
-                        : '';
+                    // Controles de Admin (Delete / Start)
+                    let adminControls = '';
+                    if (userHasPermission) {
+                        const startBtn = d.status !== 'started' 
+                            ? `<button onclick="window.openStartModal('${doc.id}')" class="text-green-500 hover:text-green-300 p-2" title="Iniciar"><i class="fas fa-play"></i></button>` 
+                            : `<button class="text-slate-600 p-2 cursor-not-allowed" title="Já iniciado"><i class="fas fa-play"></i></button>`;
+                        
+                        adminControls = `
+                            <div class="absolute top-2 right-2 flex bg-slate-900/80 rounded-lg backdrop-blur-sm border border-slate-700 opacity-0 group-hover:opacity-100 transition">
+                                ${startBtn}
+                                <button onclick="window.deleteTournament('${doc.id}')" class="text-red-500 hover:text-red-300 p-2" title="Excluir"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `;
+                    }
 
                     list.innerHTML += `
-                        <div class="bg-slate-800 rounded-xl border border-slate-700 hover:border-yellow-500/50 transition duration-300 group overflow-hidden flex flex-col h-full shadow-lg">
+                        <div class="bg-slate-800 rounded-xl border border-slate-700 hover:border-yellow-500/50 transition duration-300 group overflow-hidden flex flex-col h-full shadow-lg relative">
+                            ${adminControls}
                             <div class="p-5 flex-grow relative">
-                                <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition">
-                                    <i class="fas fa-trophy text-6xl text-yellow-500"></i>
-                                </div>
+                                <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><i class="fas fa-trophy text-6xl text-yellow-500"></i></div>
                                 <div class="flex justify-between items-start mb-4">${statusTag} <span class="text-xs text-slate-500 font-mono">#${doc.id.substr(0,4)}</span></div>
-                                <h3 class="font-bold text-lg text-white mb-2 leading-tight group-hover:text-yellow-400 transition">${d.title}</h3>
+                                <h3 class="font-bold text-lg text-white mb-2 leading-tight">${d.title}</h3>
                                 <div class="flex items-center gap-2 text-xs text-yellow-500 font-medium mb-4 bg-slate-900/50 w-fit px-2 py-1 rounded"><i class="far fa-clock"></i> ${d.date}</div>
                                 <p class="text-slate-400 text-sm line-clamp-3 mb-4 border-l-2 border-slate-700 pl-3">${d.description}</p>
+                                ${d.status === 'started' ? `<div class="mt-2 text-center"><button class="text-xs bg-red-600/20 text-red-400 border border-red-600/40 w-full py-2 rounded hover:bg-red-600 hover:text-white transition">VER CHAVES / PARTIDAS</button></div>` : ''}
                             </div>
                             <div class="bg-slate-900/50 border-t border-slate-700/50 p-3 grid grid-cols-3 gap-px text-center">
-                                <div class="text-green-400"><div class="text-lg font-bold">${conf}</div><div class="text-[10px] uppercase text-slate-500">Vão</div></div>
-                                <div class="text-yellow-400 border-l border-r border-slate-700"><div class="text-lg font-bold">${maybe}</div><div class="text-[10px] uppercase text-slate-500">Talvez</div></div>
-                                <div class="text-red-400"><div class="text-lg font-bold">${declined}</div><div class="text-[10px] uppercase text-slate-500">Não</div></div>
+                                <div class="text-green-400"><div class="text-lg font-bold">${conf}</div><div class="text-[10px]">Vão</div></div>
+                                <div class="text-yellow-400 border-l border-r border-slate-700"><div class="text-lg font-bold">${maybe}</div><div class="text-[10px]">Talvez</div></div>
+                                <div class="text-red-400"><div class="text-lg font-bold">${declined}</div><div class="text-[10px]">Não</div></div>
                             </div>
-                            ${detailsBtn ? `<div class="bg-slate-900/30 px-3 pb-2">${detailsBtn}</div>` : ''}
+                            ${userHasPermission ? `<div class="bg-slate-900/30 px-3 pb-2"><button onclick="window.showDetails('${doc.id}')" class="text-xs text-slate-400 hover:text-white underline mt-2 block w-full text-right">Ver justificativas</button></div>` : ''}
                         </div>
                     `;
                 });
             });
         }
-
-        // Função global para ser chamada pelo onclick do HTML
-        window.showDetails = async (docId) => {
-            const docRef = await getDoc(doc(db, "tournaments", docId));
-            if (!docRef.exists()) return;
-            const data = docRef.data();
-            const parts = data.participants || [];
-
-            els.detailsModal.classList.remove('hidden');
-            els.detailsContent.innerHTML = "";
-
-            if (parts.length === 0) {
-                els.detailsContent.innerHTML = "<p class='text-slate-500 italic'>Ninguém respondeu ainda.</p>";
-                return;
-            }
-
-            // Separar listas
-            const declinedList = parts.filter(p => p.status === 'declined');
-            const confirmedList = parts.filter(p => p.status === 'confirmed');
-            const maybeList = parts.filter(p => p.status === 'maybe');
-
-            const renderSection = (title, list, colorClass) => {
-                if (list.length === 0) return '';
-                return `
-                    <div class="mb-6">
-                        <h4 class="font-bold text-sm uppercase tracking-wider mb-2 ${colorClass}">${title} (${list.length})</h4>
-                        <div class="space-y-2">
-                            ${list.map(p => `
-                                <div class="bg-slate-900 p-3 rounded border border-slate-700 flex justify-between items-start">
-                                    <span class="font-medium text-slate-200">${p.name}</span>
-                                    ${p.reason ? `<span class="text-sm text-red-300 italic max-w-[60%] text-right">"${p.reason}"</span>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            };
-
-            els.detailsContent.innerHTML += renderSection('Ausentes (Com Justificativa)', declinedList, 'text-red-400');
-            els.detailsContent.innerHTML += renderSection('Confirmados', confirmedList, 'text-green-400');
-            els.detailsContent.innerHTML += renderSection('Talvez', maybeList, 'text-yellow-400');
+        
+        window.showDetails = async (id) => {
+            els.detailsModal.classList.remove('hidden'); els.detailsContent.innerHTML = "Carregando...";
+            const d = (await getDoc(doc(db, "tournaments", id))).data();
+            const parts = d.participants || [];
+            if(!parts.length) return els.detailsContent.innerHTML = "<p class='text-slate-500'>Vazio.</p>";
+            
+            const render = (t, l, c) => l.length ? `<div class="mb-4"><h4 class="font-bold text-sm uppercase ${c} mb-2">${t} (${l.length})</h4><div class="space-y-1">${l.map(p=>`<div class="bg-slate-900 p-2 rounded flex justify-between"><span class="text-slate-200">${p.name}</span>${p.reason?`<span class="text-xs text-red-300 italic">"${p.reason}"</span>`:''}</div>`).join('')}</div></div>` : '';
+            
+            els.detailsContent.innerHTML = 
+                render('Ausentes', parts.filter(p=>p.status==='declined'), 'text-red-400') +
+                render('Confirmados', parts.filter(p=>p.status==='confirmed'), 'text-green-400') +
+                render('Talvez', parts.filter(p=>p.status==='maybe'), 'text-yellow-400');
         };
     </script>
 </body>
