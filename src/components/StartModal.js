@@ -5,7 +5,8 @@ const StartModal = ({ tournament, onClose, onConfirm }) => {
         matchFormat: tournament.matchFormat || '1x1',
         structure: tournament.structure || 'single_elim',
         shuffle: tournament.shuffle || 'random',
-        logicMode: 'battleroyale'
+        // MUDANÇA AQUI: O padrão agora é 'elimination' para evitar iniciar sem chaves por engano
+        logicMode: 'elimination'
     });
 
     const handleChange = (e) => setConfig({ ...config, [e.target.id]: e.target.value });
