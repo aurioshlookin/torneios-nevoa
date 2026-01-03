@@ -18,9 +18,9 @@ const CreateModal = ({ onClose, onCreate }) => {
         if(['matchFormat', 'structure', 'shuffle'].includes(key)) {
             const desc = (
                 <span>
-                    {FORMAT_INFO.matches[newForm.matchFormat] || ''} <br/>
-                    <span className="text-slate-500">• {FORMAT_INFO.structure[newForm.structure] || ''}</span> <br/>
-                    <span className="text-slate-500">• {FORMAT_INFO.shuffle[newForm.shuffle] || ''}</span>
+                    <strong>Formato:</strong> {FORMAT_INFO.matches[newForm.matchFormat] || ''} <br/>
+                    <span className="text-slate-400 mt-1 block"><strong>Estrutura:</strong> {FORMAT_INFO.structure[newForm.structure] || ''}</span>
+                    <span className="text-slate-400 mt-1 block"><strong>Shuffle:</strong> {FORMAT_INFO.shuffle[newForm.shuffle] || ''}</span>
                 </span>
             );
             setDescPreview(desc);
@@ -57,7 +57,13 @@ const CreateModal = ({ onClose, onCreate }) => {
                             <div>
                                 <label className="block text-xs uppercase text-slate-400 mb-1 font-bold">Formato</label>
                                 <select id="t-matchFormat" className="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:border-green-500 outline-none text-white transition cursor-pointer" onChange={handleChange} value={form.matchFormat}>
-                                    {Object.keys(FORMAT_INFO.matches).map(k => <option key={k} value={k}>{k.toUpperCase()}</option>)}
+                                    <option value="1x1">1x1 (Duelo)</option>
+                                    <option value="2x2">2x2 (Duplas)</option>
+                                    <option value="3x3">3x3 (Times)</option>
+                                    <option value="4x4">4x4+ (Equipes)</option>
+                                    <option value="ffa">FFA (Todos contra Todos)</option>
+                                    <option value="nmp">Ninja Mais Procurado</option>
+                                    <option value="nmp_random">NMP (Alvo Aleatório)</option>
                                 </select>
                             </div>
                             <div>
@@ -67,15 +73,16 @@ const CreateModal = ({ onClose, onCreate }) => {
                                     <option value="double_elim">Eliminação Dupla</option>
                                     <option value="swiss">Sistema Suíço</option>
                                     <option value="groups_playoff">Grupos + Mata-mata</option>
-                                    <option value="points">Pontos Corridos</option>
+                                    <option value="points">Pontuação Acumulativa</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs uppercase text-slate-400 mb-1 font-bold">Shuffle</label>
                                 <select id="t-shuffle" className="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:border-green-500 outline-none text-white transition cursor-pointer" onChange={handleChange} value={form.shuffle}>
-                                    <option value="random">Aleatório</option>
-                                    <option value="order">Ordem Chegada</option>
-                                    <option value="ranking">Ranking</option>
+                                    <option value="random">Aleatório Puro</option>
+                                    <option value="random_protected">Aleatório (Protegido)</option>
+                                    <option value="order">Ordem de Inscrição</option>
+                                    <option value="ranking">Por Ranking/Nível</option>
                                     <option value="mirror">Espelhamento</option>
                                     <option value="thematic">Temático</option>
                                     <option value="narrative">Narrativo</option>
