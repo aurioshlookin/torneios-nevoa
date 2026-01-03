@@ -1,16 +1,8 @@
-// As variáveis globais React, useState, etc. já estão no window
-// db e auth foram declarados no src/config/firebase.js que rodou antes deste código no mesmo bundle
+// --- App Principal ---
+// Dependências globais (React, firebase, etc) já injetadas pelo loader
 
-// Desestrutura funções auxiliares do Firebase
-const { 
-    collection, addDoc, deleteDoc, updateDoc, doc, getDoc, query, orderBy, onSnapshot 
-} = window.firebase.firestore;
-
-const { 
-    signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence 
-} = window.firebase.auth;
-
-// Configurar persistência
+// Configurar persistência apenas se não estiver configurada (o loader injeta o firebase)
+// Mas é seguro chamar aqui pois auth já existe
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 const App = () => {
@@ -115,8 +107,6 @@ const App = () => {
         const unsub = onSnapshot(q, (snap) => {
             setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
             setLoadingTournaments(false);
-            
-            // Atualiza modais abertos com dados novos em tempo real
             if (selectedTournament) {
                 const updated = snap.docs.find(d => d.id === selectedTournament.id);
                 if (updated) setSelectedTournament({ id: updated.id, ...updated.data() });
@@ -178,24 +168,20 @@ const App = () => {
             const matchIndex = matches.findIndex(m => m.matchId === matchId);
             if (matchIndex === -1) return;
 
-            // Define vencedor
             matches[matchIndex].winner = winnerId;
             const winner = data.finalParticipants.find(p => p.id === winnerId);
 
-            // Verifica se é a última partida (Final)
             const currentRound = matches[matchIndex].round;
             const matchesInRound = matches.filter(m => m.round === currentRound);
             const isRoundComplete = matchesInRound.every(m => m.winner);
 
             if (isRoundComplete) {
-                // Se só tinha 1 partida nesta rodada, era a final!
                 if (matchesInRound.length === 1) {
                     await updateDoc(ref, { matches, status: 'finished', winner: winner });
                     showToast(`🏆 TORNEIO FINALIZADO! Vencedor: ${winner.name}`);
                     return;
                 }
 
-                // Gera próxima rodada
                 const winners = matchesInRound.map(m => data.finalParticipants.find(p => p.id === m.winner));
                 const nextRoundMatches = [];
                 const nextRoundNum = currentRound + 1;
@@ -211,7 +197,6 @@ const App = () => {
                             winner: null
                         });
                     } else {
-                        // Bye na próxima rodada (passa direto)
                         nextRoundMatches.push({
                             round: nextRoundNum,
                             matchId: nextMatchId++,
@@ -322,7 +307,7 @@ const App = () => {
                     onAddBot={handleAddBot}
                     onDelete={handleDelete}
                     onOpenStart={(t) => { setShowStart(t); }}
-                    onOpenBrackets={(t) => { setShowBrackets(t); }} // Abre o modal de chaves
+                    onOpenBrackets={(t) => { setShowBrackets(t); }}
                 />
             )}
 
