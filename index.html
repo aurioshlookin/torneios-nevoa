@@ -6,27 +6,19 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>Torneios da Névoa</title>
     
-    <!-- Tailwind & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/styles.css">
 
-    <!-- Babel & React -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js"></script>
-    
-    <!-- Import Map para Dependências Externas -->
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.2.0",
-            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-            "lucide-react": "https://esm.sh/lucide-react@0.378.0",
-            "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-            "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
-            "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-        }
-    }
-    </script>
+    <!-- React & Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase (Compat Version para facilitar uso global) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
         .glass-panel { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); }
@@ -37,13 +29,13 @@
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
     <div id="root"></div>
 
-    <script type="module">
+    <script type="text/babel">
         const APP_VERSION = Date.now();
 
-        // Lista de arquivos da aplicação
+        // Lista de arquivos locais da aplicação
         const files = [
             'src/config/constants.js',
-            'src/config/firebase.js', // Inicializa Firebase aqui
+            'src/config/firebase.js', 
             'src/components/LoginScreen.js',
             'src/components/Header.js',
             'src/components/TournamentCard.js',
@@ -57,24 +49,20 @@
         async function loadApp() {
             try {
                 let combinedCode = "";
-                // Imports globais que serão injetados no topo
-                const globalImports = new Set([
-                    `import React, { useState, useEffect } from 'react';`,
-                    `import { createRoot } from 'react-dom/client';`,
-                    `import { initializeApp } from 'firebase/app';`,
-                    `import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';`,
-                    `import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } from 'firebase/firestore';`
-                ]);
-
+                
+                // Pré-carrega o Firebase no namespace global para compatibilidade
+                // As bibliotecas compat já expõem 'firebase' globalmente.
+                
                 for (const file of files) {
                     const res = await fetch(`${file}?v=${APP_VERSION}`);
                     if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
                     let code = await res.text();
 
-                    // Remove imports que já estão no globalImports ou são locais
-                    code = code.replace(/import\s+.*?from\s+['"].*?['"];?/g, '');
+                    // Limpeza radical de imports para uso do Bundle Global
+                    // Remove todas as linhas que começam com import
+                    code = code.replace(/^import\s+.*$/gm, '');
                     
-                    // Remove exports para evitar erro de sintaxe no bundle único
+                    // Remove exports
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
                     code = code.replace(/export\s+\{.*?\};?/g, '');
@@ -82,22 +70,20 @@
                     combinedCode += `\n// --- ${file} ---\n${code}\n`;
                 }
 
-                // Monta o script final
-                const finalCode = Array.from(globalImports).join('\n') + combinedCode;
-
-                const output = Babel.transform(finalCode, { 
+                // Compila o código combinado
+                const output = Babel.transform(combinedCode, { 
                     presets: ['react'],
                     filename: 'app_bundle.js' 
                 }).code;
                 
+                // Executa
                 const script = document.createElement('script');
-                script.type = 'module';
                 script.textContent = output;
                 document.body.appendChild(script);
 
             } catch (e) {
                 console.error("Loader Error:", e);
-                document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro Fatal</h1><p>${e.message}</p></div>`;
+                document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro de Carregamento</h1><p>${e.message}</p></div>`;
             }
         }
         loadApp();
