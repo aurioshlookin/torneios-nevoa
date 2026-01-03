@@ -13,6 +13,8 @@
 
     <!-- Babel & React -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.10/babel.min.js"></script>
+    
+    <!-- Import Map para Dependências Externas -->
     <script type="importmap">
     {
         "imports": {
@@ -21,30 +23,27 @@
             "lucide-react": "https://esm.sh/lucide-react@0.378.0",
             "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
             "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
-            "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
-            "firebase/analytics": "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
+            "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
         }
     }
     </script>
     
     <style>
-        /* Estilos globais essenciais */
         .glass-panel { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); }
         .toast-enter { transform: translateX(100%); opacity: 0; }
         .toast-enter-active { transform: translateX(0); opacity: 1; transition: all 300ms; }
-        .toast-exit { transform: translateX(0); opacity: 1; }
-        .toast-exit-active { transform: translateX(100%); opacity: 0; transition: all 300ms; }
     </style>
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
     <div id="root"></div>
 
     <script type="module">
-        const APP_VERSION = Date.now(); // Cache busting automático
+        const APP_VERSION = Date.now();
 
+        // Lista de arquivos da aplicação
         const files = [
             'src/config/constants.js',
-            'src/config/firebase.js',
+            'src/config/firebase.js', // Inicializa Firebase aqui
             'src/components/LoginScreen.js',
             'src/components/Header.js',
             'src/components/TournamentCard.js',
@@ -58,62 +57,34 @@
         async function loadApp() {
             try {
                 let combinedCode = "";
-                const externalImports = {};
+                // Imports globais que serão injetados no topo
+                const globalImports = new Set([
+                    `import React, { useState, useEffect } from 'react';`,
+                    `import { createRoot } from 'react-dom/client';`,
+                    `import { initializeApp } from 'firebase/app';`,
+                    `import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';`,
+                    `import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } from 'firebase/firestore';`
+                ]);
 
                 for (const file of files) {
                     const res = await fetch(`${file}?v=${APP_VERSION}`);
                     if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
                     let code = await res.text();
 
-                    // Regex para extrair imports e remover duplicatas
-                    code = code.replace(/import\s+(?:([\w\*\s,{}]+)\s+from\s+)?['"]([^'"]+)['"];?/g, (match, imports, source) => {
-                        if (source.startsWith('.')) return ''; // Ignora imports locais (arquivos já estão na lista)
-                        
-                        if (!externalImports[source]) {
-                            externalImports[source] = new Set();
-                        }
-
-                        if (imports) {
-                            // Limpa e separa os imports (ex: { useState, useEffect }, React)
-                            const cleaned = imports.replace(/[{}]/g, '').split(',').map(i => i.trim());
-                            cleaned.forEach(item => {
-                                if(item) externalImports[source].add(item);
-                            });
-                        }
-                        
-                        return ''; // Remove a linha de import original
-                    });
-
-                    // Remove exports para evitar erros no escopo único
+                    // Remove imports que já estão no globalImports ou são locais
+                    code = code.replace(/import\s+.*?from\s+['"].*?['"];?/g, '');
+                    
+                    // Remove exports para evitar erro de sintaxe no bundle único
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
-                    code = code.replace(/export\s+\{([^}]+)\};?/g, ''); // Remove export { db, auth }
-                    
-                    combinedCode += `\n// --- ${file} ---\n` + code + "\n";
+                    code = code.replace(/export\s+\{.*?\};?/g, '');
+
+                    combinedCode += `\n// --- ${file} ---\n${code}\n`;
                 }
 
-                // Reconstrói os imports no topo
-                let header = '';
-                for (const [source, items] of Object.entries(externalImports)) {
-                    if (items.size > 0) {
-                        const importsList = Array.from(items).join(', ');
-                        // Tenta detectar se é default ou named (simplificado)
-                        if (items.has('React')) {
-                             // Caso especial para React que pode ter default e named
-                             const named = Array.from(items).filter(i => i !== 'React');
-                             if(named.length > 0) header += `import React, { ${named.join(', ')} } from '${source}';\n`;
-                             else header += `import React from '${source}';\n`;
-                        } else {
-                             header += `import { ${importsList} } from '${source}';\n`;
-                        }
-                    } else {
-                        header += `import '${source}';\n`;
-                    }
-                }
+                // Monta o script final
+                const finalCode = Array.from(globalImports).join('\n') + combinedCode;
 
-                const finalCode = header + combinedCode;
-                
-                // Transforma JSX para JS
                 const output = Babel.transform(finalCode, { 
                     presets: ['react'],
                     filename: 'app_bundle.js' 
@@ -125,13 +96,8 @@
                 document.body.appendChild(script);
 
             } catch (e) {
-                document.body.innerHTML = `
-                    <div class="p-10 text-red-500 text-center bg-slate-800 h-screen flex flex-col justify-center items-center">
-                        <h1 class="text-2xl font-bold mb-4">Erro ao carregar sistema</h1>
-                        <pre class="bg-black p-4 rounded text-left text-xs overflow-auto max-w-2xl">${e.message}\n${e.stack}</pre>
-                        <button onclick="location.reload()" class="mt-4 bg-blue-600 px-4 py-2 rounded text-white">Recarregar</button>
-                    </div>`;
                 console.error("Loader Error:", e);
+                document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro Fatal</h1><p>${e.message}</p></div>`;
             }
         }
         loadApp();
