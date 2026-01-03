@@ -5,7 +5,6 @@ const StartModal = ({ tournament, onClose, onConfirm }) => {
         matchFormat: tournament.matchFormat || '1x1',
         structure: tournament.structure || 'single_elim',
         shuffle: tournament.shuffle || 'random',
-        // MUDANÇA AQUI: O padrão agora é 'elimination' para evitar iniciar sem chaves por engano
         logicMode: 'elimination'
     });
 
@@ -21,7 +20,7 @@ const StartModal = ({ tournament, onClose, onConfirm }) => {
                 <div className="p-6 space-y-5">
                     <div className="bg-blue-900/20 border border-blue-500/30 p-3 rounded text-sm text-blue-200 mb-4 flex items-start gap-2">
                         <i class="fas fa-info-circle mt-1"></i>
-                        <div>Edite os formatos finais antes de gerar.</div>
+                        <div>Edite os formatos finais antes de gerar as chaves.</div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -33,6 +32,8 @@ const StartModal = ({ tournament, onClose, onConfirm }) => {
                                 <option value="3x3">3x3</option>
                                 <option value="4x4">4x4+</option>
                                 <option value="ffa">FFA</option>
+                                <option value="nmp">Ninja Mais Procurado</option>
+                                <option value="nmp_random">NMP (Alvo)</option>
                             </select>
                         </div>
                         <div>
@@ -41,6 +42,7 @@ const StartModal = ({ tournament, onClose, onConfirm }) => {
                                 <option value="single_elim">Eliminação Simples</option>
                                 <option value="double_elim">Eliminação Dupla</option>
                                 <option value="swiss">Sistema Suíço</option>
+                                <option value="groups_playoff">Grupos + Mata-mata</option>
                                 <option value="points">Pontos</option>
                             </select>
                         </div>
