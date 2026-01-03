@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { FORMAT_INFO } from '../config/constants.js';
 
 const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user, hasPermission, onAddBot, onOpenBrackets }) => {
-    // Removemos o state local 'botName' pois agora é automático
-
+    
     if (!tournament) return null;
 
     const { title, date, description, status, participants, matchFormat, id, logicMode } = tournament;
@@ -27,22 +26,45 @@ const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user
         onAddBot(id, generatedName);
     };
 
-    const renderList = (list, title, colorClass) => (
-        <div className="mb-4">
-            <h4 className={`text-sm font-bold uppercase tracking-wider mb-2 border-b pb-1 flex justify-between ${colorClass}`}>
-                {title} <span className="bg-slate-800 px-2 rounded text-xs py-0.5 text-white">{list.length}</span>
-            </h4>
-            <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                {list.length === 0 ? <span className="text-slate-600 text-xs italic">Vazio</span> : 
-                list.map(p => (
-                    <div key={p.id} className="flex justify-between items-center bg-slate-800/50 p-2 rounded border border-slate-700/50">
-                        <span className="text-slate-300 text-sm">{p.name}</span>
-                        {p.reason && <i className="fas fa-info-circle text-slate-500 cursor-help" title={p.reason}></i>}
-                    </div>
-                ))}
+    // CORREÇÃO: Renderiza parceiros e calcula contagem total
+    const renderList = (list, title, colorClass) => {
+        // Calcula total incluindo parceiros
+        const totalCount = list.reduce((acc, p) => acc + 1 + (p.partners ? p.partners.length : 0), 0);
+
+        return (
+            <div className="mb-4">
+                <h4 className={`text-sm font-bold uppercase tracking-wider mb-2 border-b pb-1 flex justify-between ${colorClass}`}>
+                    {title} <span className="bg-slate-800 px-2 rounded text-xs py-0.5 text-white">{totalCount}</span>
+                </h4>
+                <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                    {list.length === 0 ? <span className="text-slate-600 text-xs italic">Vazio</span> : 
+                    list.map(p => (
+                        <div key={p.id} className="flex flex-col bg-slate-800/50 p-2 rounded border border-slate-700/50">
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-slate-300 text-sm font-medium">
+                                    {p.name}
+                                    {/* Badge de Líder/Time se tiver parceiros */}
+                                    {p.partners && p.partners.length > 0 && <span className="ml-2 text-[9px] bg-blue-900 text-blue-300 px-1 rounded">TIME</span>}
+                                </span>
+                                {p.reason && <i className="fas fa-info-circle text-slate-500 cursor-help" title={p.reason}></i>}
+                            </div>
+                            
+                            {/* Renderiza os Parceiros indentados */}
+                            {p.partners && p.partners.length > 0 && (
+                                <div className="mt-1 pl-2 border-l-2 border-slate-600 space-y-0.5">
+                                    {p.partners.map((part, idx) => (
+                                        <div key={part.id || idx} className="text-xs text-slate-400 flex items-center gap-1">
+                                            <i className="fas fa-angle-right text-[10px] text-slate-600"></i> {part.name}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center backdrop-blur-sm p-4 animate-fade-in">
