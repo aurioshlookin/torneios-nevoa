@@ -6,27 +6,47 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
     const { matches, logicMode, finalParticipants, status, winner } = tournament;
 
     // Se não for modo de chaves ou não tiver partidas
-    if (logicMode !== 'elimination' || !matches || matches.length === 0) {
+    if (logicMode !== 'elimination' || !finalParticipants || finalParticipants.length === 0) {
         return (
             <div className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center backdrop-blur-sm p-4 animate-fade-in">
                 <div className="bg-slate-800 p-6 rounded-lg border border-slate-600 text-center max-w-md shadow-2xl">
                     <i className="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
                     <h3 className="text-xl font-bold text-white mb-2">Modo Lista Única</h3>
-                    <p className="text-slate-400 mb-6">Este torneio não usa sistema de chaves automáticas. Gerencie os resultados manualmente in-game.</p>
+                    <p className="text-slate-400 mb-6">Este torneio não usa sistema de chaves automáticas ou ainda não foi iniciado.</p>
                     <button onClick={onClose} className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded transition">Fechar</button>
                 </div>
             </div>
         );
     }
 
-    // Agrupa partidas por rodada
+    // --- CÁLCULO DA ESTRUTURA ---
+    
+    // 1. Agrupa partidas existentes por rodada
     const rounds = {};
-    matches.forEach(m => {
-        if (!rounds[m.round]) rounds[m.round] = [];
-        rounds[m.round].push(m);
-    });
+    if (matches) {
+        matches.forEach(m => {
+            if (!rounds[m.round]) rounds[m.round] = [];
+            rounds[m.round].push(m);
+        });
+    }
 
-    const totalRounds = Object.keys(rounds).length;
+    // 2. Calcula total de rounds estimados (Log2 da quantidade de participantes)
+    // Ex: 8 players = 3 rounds (8->4->2->1). 5 players = 3 rounds.
+    const totalParticipants = finalParticipants.length;
+    const estimatedRounds = Math.max(Object.keys(rounds).length, Math.ceil(Math.log2(totalParticipants)));
+    
+    // Array para iterar [1, 2, 3...]
+    const roundIterator = Array.from({ length: estimatedRounds }, (_, i) => i + 1);
+
+    // Função para nomear rounds
+    const getRoundName = (roundNum) => {
+        const diff = estimatedRounds - roundNum;
+        if (diff === 0) return "Grande Final";
+        if (diff === 1) return "Semifinais";
+        if (diff === 2) return "Quartas de Final";
+        if (diff === 3) return "Oitavas de Final";
+        return `Rodada ${roundNum}`;
+    };
 
     return (
         <div className="fixed inset-0 z-[80] bg-black/95 flex flex-col animate-fade-in">
@@ -53,18 +73,46 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
 
             {/* Área de Chaves com Scroll Horizontal */}
             <div className="flex-grow overflow-auto p-8 cursor-grab active:cursor-grabbing bg-slate-900 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-                <div className="flex gap-16 min-w-max mx-auto justify-center pt-10">
-                    {Object.keys(rounds).map(roundNum => {
-                        const isFinal = parseInt(roundNum) === totalRounds;
+                <div className="flex gap-16 min-w-max mx-auto justify-center pt-10 px-10">
+                    {roundIterator.map(roundNum => {
+                        const isFinal = roundNum === estimatedRounds;
+                        
+                        // Determina as partidas desta rodada
+                        // Se já existem no banco (rounds[roundNum]), usa elas.
+                        // Se não, gera Placeholders visuais.
+                        let currentMatches = rounds[roundNum] || [];
+                        
+                        // Se não tem partidas reais geradas para esta rodada futura, criamos placeholders
+                        if (currentMatches.length === 0) {
+                            // A quantidade de partidas cai pela metade a cada round
+                            // Final = 1, Semi = 2, Quartas = 4...
+                            // Fórmula: 2 ^ (Total - Round)
+                            const placeholderCount = Math.pow(2, estimatedRounds - roundNum);
+                            currentMatches = Array(placeholderCount).fill({ isPlaceholder: true, matchId: `ph-${roundNum}-${Math.random()}` });
+                        }
+
                         return (
                             <div key={roundNum} className="flex flex-col justify-center gap-8 w-80">
                                 <h4 className={`text-center font-bold uppercase tracking-widest text-sm py-2 rounded border shadow-lg mb-4
                                     ${isFinal ? 'bg-yellow-900/40 text-yellow-400 border-yellow-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}
                                 `}>
-                                    {isFinal ? 'Grande Final' : `Rodada ${roundNum}`}
+                                    {getRoundName(roundNum)}
                                 </h4>
                                 
-                                {rounds[roundNum].map(match => {
+                                {currentMatches.map((match, idx) => {
+                                    // PLACEHOLDER (Espaço vazio futuro)
+                                    if (match.isPlaceholder) {
+                                        return (
+                                            <div key={match.matchId || idx} className="relative group opacity-40 grayscale">
+                                                {!isFinal && <div className="absolute -right-8 top-1/2 w-8 h-0.5 bg-slate-800"></div>}
+                                                <div className="bg-slate-800/50 border border-slate-700 border-dashed rounded-lg overflow-hidden h-[106px] flex flex-col justify-center items-center">
+                                                    <span className="text-slate-600 text-xs font-mono">Aguardando...</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    // PARTIDA REAL
                                     const p1 = match.p1;
                                     const p2 = match.p2;
                                     const isWinnerP1 = match.winner === p1?.id;
@@ -95,10 +143,8 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
                                                     `}
                                                     title={p1 ? p1.name : ''}
                                                 >
-                                                    {/* Nome com suporte a quebra de linha para times grandes */}
                                                     <span className="truncate max-w-[200px] text-sm block">{p1 ? p1.name : 'Aguardando...'}</span>
                                                     {isWinnerP1 && <i className="fas fa-check-circle text-green-500 flex-shrink-0 ml-2"></i>}
-                                                    {/* Indicador de clique para admin */}
                                                     {!hasWinner && p1 && p2 && hasPermission && (
                                                         <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 flex items-center justify-center">
                                                             <span className="text-[10px] bg-black/50 px-2 rounded">Venceu?</span>
