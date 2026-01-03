@@ -19,8 +19,6 @@ const App = () => {
     const [tournaments, setTournaments] = useState([]);
     const [loadingTournaments, setLoadingTournaments] = useState(false);
     
-    // ... resto do código igual ...
-    
     // Modais
     const [showCreate, setShowCreate] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
@@ -160,6 +158,75 @@ const App = () => {
         } catch (e) { showToast(e.message, 'error'); }
     };
 
+    // --- LÓGICA DE PARTIDAS ---
+    const handleSetWinner = async (tournamentId, matchId, winnerId) => {
+        if (!window.confirm("Confirmar vencedor? Essa ação avança a chave.")) return;
+        
+        try {
+            const ref = doc(db, "tournaments", tournamentId);
+            const snap = await getDoc(ref);
+            if (!snap.exists()) return;
+            const data = snap.data();
+            
+            let matches = [...data.matches];
+            const matchIndex = matches.findIndex(m => m.matchId === matchId);
+            if (matchIndex === -1) return;
+
+            // Define vencedor
+            matches[matchIndex].winner = winnerId;
+            const winner = data.finalParticipants.find(p => p.id === winnerId);
+
+            // Verifica se é a última partida (Final)
+            const currentRound = matches[matchIndex].round;
+            const matchesInRound = matches.filter(m => m.round === currentRound);
+            const isRoundComplete = matchesInRound.every(m => m.winner);
+
+            if (isRoundComplete) {
+                // Se só tinha 1 partida nesta rodada, era a final!
+                if (matchesInRound.length === 1) {
+                    await updateDoc(ref, { matches, status: 'finished', winner: winner });
+                    showToast(`🏆 TORNEIO FINALIZADO! Vencedor: ${winner.name}`);
+                    return;
+                }
+
+                // Gera próxima rodada
+                const winners = matchesInRound.map(m => data.finalParticipants.find(p => p.id === m.winner));
+                const nextRoundMatches = [];
+                const nextRoundNum = currentRound + 1;
+                let nextMatchId = Math.max(...matches.map(m => m.matchId)) + 1;
+
+                for (let i = 0; i < winners.length; i += 2) {
+                    if (i + 1 < winners.length) {
+                        nextRoundMatches.push({
+                            round: nextRoundNum,
+                            matchId: nextMatchId++,
+                            p1: winners[i],
+                            p2: winners[i+1],
+                            winner: null
+                        });
+                    } else {
+                        // Bye na próxima rodada (passa direto)
+                        nextRoundMatches.push({
+                            round: nextRoundNum,
+                            matchId: nextMatchId++,
+                            p1: winners[i],
+                            p2: null,
+                            winner: winners[i].id,
+                            note: "Bye"
+                        });
+                    }
+                }
+                matches = [...matches, ...nextRoundMatches];
+                showToast("Rodada concluída! Próxima rodada gerada.");
+            } else {
+                showToast("Vencedor definido!");
+            }
+
+            await updateDoc(ref, { matches });
+
+        } catch (e) { showToast(e.message, 'error'); }
+    };
+
     const handleStart = async (id, config) => {
         try {
             const ref = doc(db, "tournaments", id);
@@ -249,6 +316,7 @@ const App = () => {
                     onAddBot={handleAddBot}
                     onDelete={handleDelete}
                     onOpenStart={(t) => { setShowStart(t); }}
+                    onSetWinner={handleSetWinner} // Passa a função para o modal
                 />
             )}
 
