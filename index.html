@@ -64,15 +64,18 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
         // --- CONFIGURAÇÃO ---
+        // Dados do NOVO projeto Firebase "torneios-nin"
         const firebaseConfig = {
-            apiKey: "SUA_API_KEY", // Cole do guia
-            authDomain: "seu-app.firebaseapp.com",
-            projectId: "seu-id",
-            storageBucket: "seu-app.appspot.com",
-            messagingSenderId: "123",
-            appId: "1:123:web:123"
+            apiKey: "AIzaSyBFR5q22-9AIGJYN6fFFJVV3p9LH6p5Ma8",
+            authDomain: "torneios-nin.firebaseapp.com",
+            projectId: "torneios-nin",
+            storageBucket: "torneios-nin.firebasestorage.app",
+            messagingSenderId: "466171413764",
+            appId: "1:466171413764:web:77e537310a16c391193c51",
+            measurementId: "G-L166F59V2D"
         };
         
         // --- DADOS DO DISCORD ---
@@ -85,6 +88,7 @@
         const ADMIN_IDS = ["SEU_ID_DISCORD"];
 
         const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app); // Inicializa Analytics
         const db = getFirestore(app);
         const auth = getAuth(app);
 
