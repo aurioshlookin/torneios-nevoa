@@ -1,4 +1,5 @@
-import React from 'react';
+// --- Header.js ---
+// Navbar principal com logo e controles de usuário
 
 const Header = ({ user, hasPermission, onOpenCreate, onOpenSettings, onLogout }) => {
     return (
@@ -12,9 +13,10 @@ const Header = ({ user, hasPermission, onOpenCreate, onOpenSettings, onLogout })
                 <div className="flex items-center gap-4">
                     {hasPermission && (
                         <>
-                            <button onClick={onOpenCreate} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-full font-bold shadow-lg transition flex items-center gap-2 transform hover:scale-105">
-                                <i className="fas fa-plus"></i> <span class="hidden sm:inline">Novo Evento</span>
+                            <button id="new-event-btn" onClick={onOpenCreate} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-full font-bold shadow-lg transition flex items-center gap-2 transform hover:scale-105">
+                                <i className="fas fa-plus"></i> <span className="hidden sm:inline">Novo Evento</span>
                             </button>
+
                             <button onClick={onOpenSettings} className="text-slate-400 hover:text-white transition p-2 rounded hover:bg-slate-700" title="Configurações">
                                 <i className="fas fa-cog fa-lg"></i>
                             </button>
@@ -37,4 +39,3 @@ const Header = ({ user, hasPermission, onOpenCreate, onOpenSettings, onLogout })
         </nav>
     );
 };
-export default Header;
