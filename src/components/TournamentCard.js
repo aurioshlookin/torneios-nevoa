@@ -3,12 +3,16 @@ import React from 'react';
 const TournamentCard = ({ tournament, onClick }) => {
     const { title, date, description, status, participants, id, matchFormat } = tournament;
     
-    const conf = (participants || []).filter(p => p.status === 'confirmed').length;
+    // CORREÇÃO: Conta o líder + quantidade de parceiros
+    const conf = (participants || []).filter(p => p.status === 'confirmed').reduce((total, p) => {
+        const partnersCount = (p.partners && Array.isArray(p.partners)) ? p.partners.length : 0;
+        return total + 1 + partnersCount;
+    }, 0);
+
     const isPending = status === 'pending';
     const isStarted = status === 'started';
-    const isFinished = status === 'finished'; // Adicionado verificação
+    const isFinished = status === 'finished';
 
-    // Lógica de Status corrigida
     let statusTag = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">ABERTO</span>;
     
     if (isPending) {
@@ -16,7 +20,6 @@ const TournamentCard = ({ tournament, onClick }) => {
     } else if (isStarted) {
         statusTag = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">AO VIVO</span>;
     } else if (isFinished) {
-        // Novo badge para Finalizado
         statusTag = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">FINALIZADO</span>;
     }
 
