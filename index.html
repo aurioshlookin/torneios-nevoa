@@ -81,6 +81,9 @@
                 let combinedCode = "";
                 
                 // Header with explicit destructuring from the globals we set up above
+                // Note: We use 'var' instead of 'const'/ 'let' to avoid redeclaration errors if scripts are re-run 
+                // or if we have scope issues, although inside Babel transform it should be fine.
+                // However, since we are concatenating, 'const' at top level is global to the bundle.
                 let bundleHeader = `
                     const { useState, useEffect } = window.React;
                     const { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } = window.firebase.firestore;
@@ -99,11 +102,13 @@
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
                     code = code.replace(/export\s+\{.*?\};?/g, '');
 
-                    // REMOVE REDECLARATIONS:
+                    // REMOVE REDECLARATIONS from source files:
                     // If files try to destructure React or Firebase again, remove those lines
-                    code = code.replace(/const\s+\{\s*useState.*\}\s*=\s*React;/g, '');
-                    code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*(?:window\.)?firebase\.firestore;/g, '');
-                    code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*(?:window\.)?firebase\.auth;/g, '');
+                    // Matches: const { ... } = React;
+                    code = code.replace(/const\s+\{.*\}\s*=\s*React;/g, '');
+                    // Matches: const { ... } = window.firebase... or firebase...
+                    code = code.replace(/const\s+\{.*\}\s*=\s*(?:window\.)?firebase\.(?:firestore|auth);/g, '');
+                    code = code.replace(/const\s+\{\s*initializeApp\s*\}\s*=\s*(?:window\.)?firebase;/g, '');
                     
                     combinedCode += `\n// --- ${file} ---\n${code}\n`;
                 }
