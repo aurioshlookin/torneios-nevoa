@@ -1,4 +1,5 @@
-import React from 'react';
+// --- LoginScreen.js ---
+// Tela de boas-vindas e login
 
 const LoginScreen = ({ onLogin, loading }) => {
     return (
@@ -26,4 +27,3 @@ const LoginScreen = ({ onLogin, loading }) => {
         </div>
     );
 };
-export default LoginScreen;
