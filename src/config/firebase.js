@@ -1,6 +1,4 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+// As funções initializeApp, getFirestore, etc. já vêm dos imports globais do loader
 
 const firebaseConfig = {
     apiKey: "AIzaSyBFR5q22-9AIGJYN6fFFJVV3p9LH6p5Ma8",
@@ -11,6 +9,7 @@ const firebaseConfig = {
     appId: "1:466171413764:web:77e537310a16c391193c51"
 };
 
+// Inicializa e expõe para o escopo global do bundle
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+const db = getFirestore(app);
+const auth = getAuth(app);
