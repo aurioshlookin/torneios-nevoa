@@ -10,8 +10,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/styles.css">
 
-    <!-- Babel para JSX -->
+    <!-- React & Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
         .glass-panel { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); }
@@ -22,37 +29,9 @@
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
     <div id="root"></div>
 
-    <!-- Tipo module permite imports nativos -->
     <script type="module">
         const APP_VERSION = Date.now();
 
-        // 1. Imports Globais (Executados uma única vez)
-        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
-        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        
-        // Firebase v9 Modular (via ESM)
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { 
-            getAuth, signInWithCustomToken, signOut, onAuthStateChanged, 
-            setPersistence, browserLocalPersistence 
-        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { 
-            getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot 
-        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        // Disponibiliza no escopo global para o código Babelizado acessar
-        window.React = React;
-        window.useState = useState;
-        window.useEffect = useEffect;
-        window.createRoot = createRoot;
-        
-        window.firebase = {
-            initializeApp,
-            auth: { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence },
-            firestore: { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot }
-        };
-
-        // Lista de arquivos da aplicação
         const files = [
             'src/config/constants.js',
             'src/config/firebase.js', 
@@ -61,6 +40,7 @@
             'src/components/TournamentCard.js',
             'src/components/CreateModal.js',
             'src/components/DetailsModal.js',
+            'src/components/BracketsModal.js', // Novo modal de chaves
             'src/components/StartModal.js',
             'src/components/SettingsModal.js',
             'src/app.js'
@@ -70,16 +50,22 @@
             try {
                 let combinedCode = "";
                 
+                // Pré-carrega globais para o Babel
+                window.React = React;
+                window.useState = React.useState;
+                window.useEffect = React.useEffect;
+                window.createRoot = ReactDOM.createRoot;
+                
+                // Expondo Firebase globalmente
+                window.firebase = firebase;
+
                 for (const file of files) {
                     const res = await fetch(`${file}?v=${APP_VERSION}`);
                     if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
                     let code = await res.text();
 
-                    // REMOVE TODAS as linhas de import para evitar conflitos
-                    // O código vai confiar que as variáveis globais (window.React, window.firebase) existem
+                    // Limpeza de imports/exports para bundle único
                     code = code.replace(/^import\s+.*$/gm, '');
-                    
-                    // Remove exports (transforma em variáveis locais do bundle)
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
                     code = code.replace(/export\s+\{.*?\};?/g, '');
@@ -87,14 +73,11 @@
                     combinedCode += `\n// --- ${file} ---\n${code}\n`;
                 }
 
-                // Compila JSX com Babel
                 const output = Babel.transform(combinedCode, { 
                     presets: ['react'],
                     filename: 'app_bundle.js' 
                 }).code;
                 
-                // Executa o código compilado
-                // Como é um eval global, ele acessará window.React, etc.
                 const script = document.createElement('script');
                 script.textContent = output;
                 document.body.appendChild(script);
