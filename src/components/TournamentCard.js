@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TournamentCard = ({ tournament, onClick, currentUserId, hasPermission }) => {
+const TournamentCard = ({ tournament, onClick }) => {
     const { title, date, description, status, participants, id, matchFormat } = tournament;
     
     const conf = (participants || []).filter(p => p.status === 'confirmed').length;
@@ -36,7 +36,7 @@ const TournamentCard = ({ tournament, onClick, currentUserId, hasPermission }) =
             <div className="bg-slate-900/50 border-t border-slate-700/50 p-3 flex justify-between items-center text-xs text-slate-400">
                 <span><i className="fas fa-users text-green-500 mr-1"></i> <b>{conf}</b> Confirmados</span>
                 <span className="text-yellow-500 group-hover:underline flex items-center gap-1">
-                    Detalhes <i className="fas fa-arrow-right"></i>
+                    Ver participantes <i className="fas fa-arrow-right"></i>
                 </span>
             </div>
         </div>
