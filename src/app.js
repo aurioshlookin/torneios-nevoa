@@ -24,6 +24,7 @@ const App = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [selectedTournament, setSelectedTournament] = useState(null);
     const [showStart, setShowStart] = useState(false); 
+    const [showBrackets, setShowBrackets] = useState(null); // NOVO: Controle do modal de chaves
 
     // Permissões
     const [hasPermission, setHasPermission] = useState(false);
@@ -114,13 +115,19 @@ const App = () => {
         const unsub = onSnapshot(q, (snap) => {
             setTournaments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
             setLoadingTournaments(false);
+            
+            // Atualiza modais abertos com dados novos em tempo real
             if (selectedTournament) {
                 const updated = snap.docs.find(d => d.id === selectedTournament.id);
                 if (updated) setSelectedTournament({ id: updated.id, ...updated.data() });
             }
+            if (showBrackets) {
+                const updated = snap.docs.find(d => d.id === showBrackets.id);
+                if (updated) setShowBrackets({ id: updated.id, ...updated.data() });
+            }
         });
         return () => unsub();
-    }, [user, selectedTournament?.id]);
+    }, [user, selectedTournament?.id, showBrackets?.id]);
 
     const handleCreate = async (formData) => {
         try {
@@ -158,7 +165,6 @@ const App = () => {
         } catch (e) { showToast(e.message, 'error'); }
     };
 
-    // --- LÓGICA DE PARTIDAS ---
     const handleSetWinner = async (tournamentId, matchId, winnerId) => {
         if (!window.confirm("Confirmar vencedor? Essa ação avança a chave.")) return;
         
@@ -316,7 +322,17 @@ const App = () => {
                     onAddBot={handleAddBot}
                     onDelete={handleDelete}
                     onOpenStart={(t) => { setShowStart(t); }}
-                    onSetWinner={handleSetWinner} // Passa a função para o modal
+                    onOpenBrackets={(t) => { setShowBrackets(t); }} // Abre o modal de chaves
+                />
+            )}
+
+            {showBrackets && (
+                <BracketsModal 
+                    tournament={showBrackets}
+                    user={user}
+                    hasPermission={hasPermission}
+                    onClose={() => setShowBrackets(null)}
+                    onSetWinner={handleSetWinner}
                 />
             )}
 
