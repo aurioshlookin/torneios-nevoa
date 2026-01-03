@@ -51,6 +51,8 @@
                 let combinedCode = "";
                 
                 // Header com declarações únicas
+                // IMPORTANTE: Se o código fonte (ex: app.js) também desestruturar essas variáveis,
+                // precisamos garantir que o loader remova essas linhas para evitar "Identifier has already been declared".
                 let bundleHeader = `
                     const { useState, useEffect } = React;
                     const { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } = firebase.firestore;
@@ -62,19 +64,45 @@
                     if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
                     let code = await res.text();
 
-                    // Limpeza radical: remove qualquer linha de import ou desestruturação que conflite
-                    // Remove import lines
+                    // LIMPEZA DE CÓDIGO
+                    
+                    // 1. Remove imports
                     code = code.replace(/^import\s+.*$/gm, '');
-                    // Remove const { useState } = React; se existir nos arquivos
-                    code = code.replace(/const\s+\{\s*useState.*\}\s*=\s*React;/g, '');
-                    // Remove exports
+                    
+                    // 2. Remove exports
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
                     code = code.replace(/export\s+\{.*?\};?/g, '');
 
+                    // 3. Remove redeclarações de React e Firebase que já estão no header
+                    // Remove: const { useState ... } = React;
+                    code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*React;/g, '');
+                    code = code.replace(/const\s+\{\s*useState\s*\}\s*=\s*React;/g, ''); // Caso específico comum
+                    
+                    // Remove: const { ... } = firebase.firestore; ou window.firebase.firestore;
+                    code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*(?:window\.)?firebase\.firestore;/g, '');
+                    
+                    // Remove: const { ... } = firebase.auth; ou window.firebase.auth;
+                    code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*(?:window\.)?firebase\.auth;/g, '');
+
+                    // 4. Remove inicialização duplicada do Firebase se existir (em src/config/firebase.js)
+                    // Se o arquivo tenta declarar 'const db =' mas já temos db global, isso daria erro se usássemos let/const no header.
+                    // Como no header usamos const, não podemos redeclarar.
+                    // O firebase.js geralmente faz: const app = ... const db = ...
+                    // Vamos deixar o firebase.js rodar, mas precisamos garantir que ele não conflite.
+                    // Se src/config/firebase.js exporta db e auth, e nós usamos const db = ... no header, vai dar erro.
+                    
+                    // CORREÇÃO: Vamos remover a declaração de db e auth do bundleHeader se vamos deixar o firebase.js criar.
+                    // OU (Melhor): Vamos limpar o firebase.js para não declarar se já existir.
+                    // Dado que estamos num ambiente no-build frágil, vamos adotar a estratégia:
+                    // O header declara as FUNÇÕES. As INSTÂNCIAS (app, db, auth) são criadas pelo src/config/firebase.js.
+                    
                     combinedCode += `\n// --- ${file} ---\n${code}\n`;
                 }
 
+                // Ajuste no Header: Não declarar db e auth aqui, deixar o arquivo de config criar.
+                // Apenas desestruturar as classes/funções estáticas.
+                
                 const output = Babel.transform(bundleHeader + combinedCode, { 
                     presets: ['react'],
                     filename: 'app_bundle.js' 
