@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FORMAT_INFO } from '../config/constants.js';
 
-const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user, hasPermission }) => {
+const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user, hasPermission, onAddBot }) => {
+    const [botName, setBotName] = useState('');
+
     if (!tournament) return null;
 
     const { title, date, description, status, participants, matchFormat, id } = tournament;
@@ -17,7 +19,11 @@ const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user
     const maybe = parts.filter(p => p.status === 'maybe');
     const declined = parts.filter(p => p.status === 'declined');
 
-    const amIIn = user && confirmed.some(p => p.id === user.uid);
+    const handleAddBot = () => {
+        if (!botName.trim()) return;
+        onAddBot(id, botName);
+        setBotName('');
+    };
 
     const renderList = (list, title, colorClass) => (
         <div className="mb-4">
@@ -75,18 +81,31 @@ const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user
                         </div>
                         
                         <div className="border-t border-slate-700 pt-4">
-                            {status !== 'started' ? (
-                                amIIn ? (
-                                    <div className="w-full bg-green-900/30 border border-green-500/30 text-green-400 py-3 rounded-lg text-center font-bold">
-                                        <i class="fas fa-check-circle mr-2"></i> Você está confirmado!
+                            {/* Apenas Admins podem adicionar bots. Usuários normais só veem aviso */}
+                            {hasPermission && status !== 'started' ? (
+                                <div className="bg-slate-900/50 p-3 rounded border border-slate-700">
+                                    <label className="text-xs font-bold text-slate-400 mb-2 block">Adicionar Bot de Teste</label>
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Nome (ex: Bot Test 1)" 
+                                            className="flex-grow bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white focus:border-green-500 outline-none"
+                                            value={botName}
+                                            onChange={(e) => setBotName(e.target.value)}
+                                        />
+                                        <button 
+                                            onClick={handleAddBot}
+                                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold transition"
+                                        >
+                                            Adicionar
+                                        </button>
                                     </div>
-                                ) : (
-                                    <button onClick={() => onJoin(id)} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition transform hover:scale-[1.01]">
-                                        Confirmar Presença
-                                    </button>
-                                )
+                                    <p className="text-[10px] text-slate-500 mt-1">Útil para testar chaveamento.</p>
+                                </div>
                             ) : (
-                                <div className="text-center text-slate-500 text-sm italic">Inscrições encerradas.</div>
+                                <div className="text-center text-slate-500 text-sm italic">
+                                    {status === 'started' ? 'Inscrições encerradas.' : 'Inscrições exclusivas via Discord.'}
+                                </div>
                             )}
                         </div>
                     </div>
