@@ -7,67 +7,97 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-900 text-white font-sans">
+<body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
 
     <!-- Navbar -->
     <nav class="bg-slate-800 p-4 border-b border-slate-700">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-bold text-yellow-500"><i class="fas fa-trophy"></i> Arena Hub</h1>
             <div id="auth-container">
-                <button id="login-btn" class="bg-[#5865F2] hover:bg-[#4752C4] text-white px-4 py-2 rounded transition">
-                    <i class="fab fa-discord"></i> Login com Discord
-                </button>
-                <div id="loading-btn" class="hidden text-slate-400">
-                    <i class="fas fa-spinner fa-spin"></i> Conectando...
-                </div>
+                <!-- Botão de Login (Visível apenas na tela de login, mas mantido aqui para controle) -->
                 <div id="user-info" class="hidden flex items-center gap-3">
                     <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-slate-600">
                     <span id="username" class="font-medium"></span>
-                    <button id="logout-btn" class="text-sm text-red-400 hover:text-red-300">Sair</button>
+                    <button id="logout-btn" class="text-sm text-red-400 hover:text-red-300 ml-2">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Área Principal -->
-    <main class="container mx-auto p-6">
+    <!-- Tela de Login (Aparece se não estiver logado) -->
+    <div id="login-screen" class="flex-grow flex flex-col items-center justify-center p-6 text-center">
+        <div class="bg-slate-800 p-8 rounded-lg shadow-xl border border-slate-700 max-w-md w-full">
+            <div class="text-5xl text-yellow-500 mb-4">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Acesso Restrito</h2>
+            <p class="text-slate-400 mb-6">Faça login com sua conta do Discord para visualizar e gerenciar os torneios.</p>
+            
+            <button id="login-btn" class="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 px-4 rounded transition flex items-center justify-center gap-2">
+                <i class="fab fa-discord"></i> Entrar com Discord
+            </button>
+            
+            <div id="loading-btn" class="hidden w-full bg-slate-700 text-slate-300 font-bold py-3 px-4 rounded flex items-center justify-center gap-2 cursor-wait">
+                <i class="fas fa-spinner fa-spin"></i> Conectando...
+            </div>
+        </div>
+    </div>
+
+    <!-- Área Principal (Aparece APENAS se estiver logado) -->
+    <main id="main-content" class="hidden container mx-auto p-6 flex-grow">
+        
         <!-- Painel Admin -->
-        <section id="admin-panel" class="hidden mb-10 bg-slate-800 p-6 rounded-lg border border-slate-700 shadow-lg">
-            <h2 class="text-xl font-bold mb-4 text-green-400">Criar Novo Torneio</h2>
-            <form id="create-tournament-form" class="grid gap-4 md:grid-cols-2">
+        <section id="admin-panel" class="hidden mb-10 bg-slate-800 p-6 rounded-lg border border-slate-700 shadow-lg relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <i class="fas fa-crown text-9xl text-yellow-500"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-4 text-green-400 border-b border-slate-700 pb-2">
+                <i class="fas fa-plus-circle"></i> Criar Novo Torneio
+            </h2>
+            <form id="create-tournament-form" class="grid gap-4 md:grid-cols-2 relative z-10">
                 <div class="col-span-2">
-                    <label class="block text-sm text-slate-400 mb-1">Título</label>
-                    <input type="text" id="t-title" required class="w-full bg-slate-700 border border-slate-600 rounded p-2 focus:border-yellow-500 outline-none">
+                    <label class="block text-sm text-slate-400 mb-1 font-bold">Título do Evento</label>
+                    <input type="text" id="t-title" required placeholder="Ex: Torneio de Sábado" class="w-full bg-slate-900 border border-slate-600 rounded p-2 focus:border-yellow-500 outline-none text-white placeholder-slate-600 transition">
                 </div>
                 <div>
-                    <label class="block text-sm text-slate-400 mb-1">Data/Hora</label>
-                    <input type="text" id="t-date" placeholder="Ex: Sábado às 19h" required class="w-full bg-slate-700 border border-slate-600 rounded p-2 outline-none">
+                    <label class="block text-sm text-slate-400 mb-1 font-bold">Data/Hora</label>
+                    <input type="text" id="t-date" placeholder="Ex: Sábado às 19h" required class="w-full bg-slate-900 border border-slate-600 rounded p-2 focus:border-yellow-500 outline-none text-white placeholder-slate-600 transition">
                 </div>
                 <div class="col-span-2">
-                    <label class="block text-sm text-slate-400 mb-1">Descrição</label>
-                    <textarea id="t-desc" rows="3" required class="w-full bg-slate-700 border border-slate-600 rounded p-2 outline-none"></textarea>
+                    <label class="block text-sm text-slate-400 mb-1 font-bold">Descrição</label>
+                    <textarea id="t-desc" rows="3" placeholder="Detalhes, regras, prêmios..." required class="w-full bg-slate-900 border border-slate-600 rounded p-2 focus:border-yellow-500 outline-none text-white placeholder-slate-600 transition"></textarea>
                 </div>
-                <button type="submit" class="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded mt-2">
+                <button type="submit" class="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded mt-2 shadow-lg transition transform hover:scale-[1.01] active:scale-95">
                     Lançar Torneio 🚀
                 </button>
             </form>
         </section>
 
         <!-- Lista -->
-        <h2 class="text-2xl font-bold mb-6 border-l-4 border-yellow-500 pl-3">Torneios Ativos</h2>
+        <div class="flex items-center gap-3 mb-6">
+            <h2 class="text-2xl font-bold border-l-4 border-yellow-500 pl-3">Torneios Ativos</h2>
+            <div id="loader-tournaments" class="hidden text-yellow-500"><i class="fas fa-sync fa-spin"></i></div>
+        </div>
+        
         <div id="tournaments-list" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <p class="text-slate-500 col-span-full">Carregando...</p>
+            <!-- Cards serão injetados aqui -->
         </div>
     </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-600 text-center p-4 text-xs border-t border-slate-800 mt-auto">
+        &copy; 2024 Arena Hub - Sistema de Torneios
+    </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
         // --- CONFIGURAÇÃO ---
-        // Dados do NOVO projeto Firebase "torneios-nin"
         const firebaseConfig = {
             apiKey: "AIzaSyBFR5q22-9AIGJYN6fFFJVV3p9LH6p5Ma8",
             authDomain: "torneios-nin.firebaseapp.com",
@@ -82,136 +112,242 @@
         const DISCORD_CLIENT_ID = "1453817939265589452"; 
         
         // --- URL DO SEU BOT NA SQUARE CLOUD ---
-        // IMPORTANTE: Adicione o "/auth/discord" no final!
         const BOT_API_URL = "https://torneionevoa.squareweb.app/auth/discord";
 
-        const ADMIN_IDS = ["SEU_ID_DISCORD"];
+        // --- ADICIONE SEU ID AQUI PARA TER PERMISSÃO DE CRIAR ---
+        // Você pode ver seu ID no console do navegador (F12) após logar
+        const ADMIN_IDS = ["SEU_ID_DISCORD_AQUI", "1410456333391761462", "1410661305227935875"]; 
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app); // Inicializa Analytics
+        const analytics = getAnalytics(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Elementos
+        // Define persistência LOCAL (Login dura mesmo fechando a aba)
+        setPersistence(auth, browserLocalPersistence).catch(error => {
+            console.error("Erro na persistência:", error);
+        });
+
+        // Elementos UI
         const loginBtn = document.getElementById('login-btn');
         const loadingBtn = document.getElementById('loading-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const userInfo = document.getElementById('user-info');
+        const loginScreen = document.getElementById('login-screen');
+        const mainContent = document.getElementById('main-content');
         const adminPanel = document.getElementById('admin-panel');
         const form = document.getElementById('create-tournament-form');
+        const list = document.getElementById('tournaments-list');
+        const loaderTournaments = document.getElementById('loader-tournaments');
 
-        // --- LÓGICA DE LOGIN (Via Bot API) ---
+        // --- LÓGICA DE LOGIN ---
         loginBtn.addEventListener('click', () => {
-            // URL atual limpa (sem query params)
             const redirectUri = window.location.origin + window.location.pathname;
-            
-            // Redireciona para o Discord
             const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
             window.location.href = authUrl;
         });
 
-        // Ao carregar a página, verifica se voltou do Discord com código
+        // Callback do Login (Code from Discord)
         window.addEventListener('load', async () => {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
 
             if (code) {
-                // Limpa a URL visualmente
+                // Limpa URL
                 window.history.replaceState({}, document.title, window.location.pathname);
                 
-                loginBtn.classList.add('hidden');
-                loadingBtn.classList.remove('hidden');
+                toggleLoginLoading(true);
 
                 try {
-                    // Manda o código para o Bot trocar por Token
                     const redirectUri = window.location.origin + window.location.pathname;
-                    
                     const response = await fetch(BOT_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ code, redirectUri })
                     });
 
-                    if (!response.ok) throw new Error('Falha na troca de token');
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        throw new Error(`Falha API Bot: ${errText}`);
+                    }
 
                     const data = await response.json();
-                    
-                    // Loga no Firebase com o token que o Bot gerou
                     await signInWithCustomToken(auth, data.token);
+                    // O onAuthStateChanged vai lidar com o resto
                     
                 } catch (error) {
                     console.error("Erro login:", error);
                     alert("Erro ao logar: " + error.message);
-                    loadingBtn.classList.add('hidden');
-                    loginBtn.classList.remove('hidden');
+                    toggleLoginLoading(false);
                 }
             }
         });
+
+        function toggleLoginLoading(isLoading) {
+            if(isLoading) {
+                loginBtn.classList.add('hidden');
+                loadingBtn.classList.remove('hidden');
+            } else {
+                loginBtn.classList.remove('hidden');
+                loadingBtn.classList.add('hidden');
+            }
+        }
 
         logoutBtn.addEventListener('click', () => signOut(auth));
 
+        // --- MONITOR DE ESTADO DO USUÁRIO ---
         onAuthStateChanged(auth, (user) => {
-            loadingBtn.classList.add('hidden');
+            // Se estiver na tela de loading do login, reseta
+            toggleLoginLoading(false);
+
             if (user) {
-                loginBtn.classList.add('hidden');
+                // LOGADO
+                loginScreen.classList.add('hidden');
+                mainContent.classList.remove('hidden'); // Mostra o conteúdo principal
                 userInfo.classList.remove('hidden');
                 
-                // O Firebase salva dados básicos, mas o ID do Discord está no UID
                 const discordId = user.uid;
-                
-                // Tenta pegar nome/avatar que salvamos nos claims (opcional)
+                console.log("Usuário logado ID:", discordId); // Debug para você ver seu ID
+
                 document.getElementById('username').innerText = user.displayName || "Usuário";
-                // Avatar placeholder se não tiver
                 document.getElementById('user-avatar').src = user.photoURL || `https://cdn.discordapp.com/embed/avatars/0.png`;
 
                 if (ADMIN_IDS.includes(discordId)) {
+                    console.log("Modo Admin ATIVADO");
                     adminPanel.classList.remove('hidden');
+                } else {
+                    console.log("Modo Admin DESATIVADO (ID não está na lista)");
                 }
+                
+                // Inicia listener de torneios apenas quando logado
+                iniciarListenerTorneios();
+
             } else {
-                loginBtn.classList.remove('hidden');
+                // DESLOGADO
+                loginScreen.classList.remove('hidden'); // Mostra tela de login
+                mainContent.classList.add('hidden');    // Esconde conteúdo
                 userInfo.classList.add('hidden');
                 adminPanel.classList.add('hidden');
+                list.innerHTML = ""; // Limpa lista por segurança
             }
         });
 
-        // --- LÓGICA DE TORNEIOS (Igual anterior) ---
+        // --- CRIAR TORNEIO ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Verifica auth de novo por segurança
+            if(!auth.currentUser) return alert("Você precisa estar logado.");
+
+            const btn = form.querySelector('button');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+
             const title = document.getElementById('t-title').value;
             const date = document.getElementById('t-date').value;
             const desc = document.getElementById('t-desc').value;
 
             try {
+                console.log("Tentando criar torneio:", { title, date, desc });
+                
                 await addDoc(collection(db, "tournaments"), {
-                    title, date, description: desc,
-                    status: "pending", createdAt: new Date(), participants: []
+                    title, 
+                    date, 
+                    description: desc,
+                    status: "pending", 
+                    createdAt: new Date(), 
+                    createdBy: auth.currentUser.uid,
+                    creatorName: auth.currentUser.displayName,
+                    participants: []
                 });
-                alert("Torneio enviado para o Bot!");
+                
+                alert("Torneio enviado para o Bot com sucesso!");
                 form.reset();
-            } catch (error) { alert("Erro ao criar."); }
+            } catch (error) { 
+                console.error("Erro Firestore:", error);
+                alert("Erro ao criar torneio: " + error.message); 
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
         });
 
-        const q = query(collection(db, "tournaments"), orderBy("createdAt", "desc"));
-        onSnapshot(q, (snapshot) => {
-            const list = document.getElementById('tournaments-list');
-            list.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                if(data.status === 'finished') return;
-                const conf = (data.participants||[]).filter(p=>p.status==='confirmed').length;
+        // --- LISTAR TORNEIOS ---
+        let unsubscribeTorneios = null;
+
+        function iniciarListenerTorneios() {
+            if(unsubscribeTorneios) return; // Já está ouvindo
+
+            loaderTournaments.classList.remove('hidden');
+            const q = query(collection(db, "tournaments"), orderBy("createdAt", "desc"));
+            
+            unsubscribeTorneios = onSnapshot(q, (snapshot) => {
+                loaderTournaments.classList.add('hidden');
+                list.innerHTML = "";
                 
-                list.innerHTML += `
-                    <div class="bg-slate-800 rounded border border-slate-700 p-4 hover:border-yellow-500 transition">
-                        <div class="flex justify-between">
-                            <h3 class="font-bold text-white">${data.title}</h3>
-                            <span class="text-xs bg-slate-900 px-2 py-1 rounded text-yellow-500">${data.date}</span>
+                if (snapshot.empty) {
+                    list.innerHTML = `
+                        <div class="col-span-full text-center p-10 bg-slate-800 rounded-lg border border-slate-700 border-dashed opacity-70">
+                            <i class="fas fa-wind text-4xl mb-3 text-slate-500"></i>
+                            <p class="text-slate-400">Nenhum torneio ativo no momento.</p>
                         </div>
-                        <p class="text-slate-400 text-sm mt-2">${data.description}</p>
-                        <div class="mt-4 text-xs text-green-400 font-bold"><i class="fas fa-check"></i> ${conf} Confirmados</div>
-                    </div>
-                `;
+                    `;
+                    return;
+                }
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if(data.status === 'finished') return;
+                    
+                    const conf = (data.participants||[]).filter(p=>p.status==='confirmed').length;
+                    const maybe = (data.participants||[]).filter(p=>p.status==='maybe').length;
+                    const declined = (data.participants||[]).filter(p=>p.status==='declined').length;
+                    
+                    // Status Badge Logic
+                    let statusHtml = '';
+                    if(data.status === 'pending') {
+                        statusHtml = '<span class="bg-yellow-900 text-yellow-300 text-xs px-2 py-1 rounded border border-yellow-700 animate-pulse"><i class="fas fa-cog fa-spin"></i> Processando...</span>';
+                    } else {
+                        statusHtml = '<span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded border border-green-700">Aberto</span>';
+                    }
+
+                    list.innerHTML += `
+                        <div class="bg-slate-800 rounded-lg border border-slate-700 p-0 overflow-hidden hover:border-yellow-500 transition shadow-lg group flex flex-col h-full">
+                            <div class="p-5 flex-grow">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h3 class="font-bold text-lg text-white group-hover:text-yellow-400 transition">${data.title}</h3>
+                                    ${statusHtml}
+                                </div>
+                                
+                                <div class="flex items-center gap-2 text-sm text-yellow-500 mb-3 bg-slate-900/50 p-2 rounded w-fit">
+                                    <i class="far fa-calendar-alt"></i>
+                                    <span>${data.date}</span>
+                                </div>
+
+                                <p class="text-slate-400 text-sm mb-4 line-clamp-3">${data.description}</p>
+                            </div>
+
+                            <div class="bg-slate-900/80 p-3 border-t border-slate-700 grid grid-cols-3 gap-2 text-center text-xs">
+                                <div class="text-green-400 font-bold bg-slate-800 p-1 rounded" title="Confirmados">
+                                    <i class="fas fa-check mb-1 block"></i> ${conf}
+                                </div>
+                                <div class="text-yellow-400 font-bold bg-slate-800 p-1 rounded" title="Talvez">
+                                    <i class="fas fa-question mb-1 block"></i> ${maybe}
+                                </div>
+                                <div class="text-red-400 font-bold bg-slate-800 p-1 rounded" title="Não vão">
+                                    <i class="fas fa-times mb-1 block"></i> ${declined}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }, (error) => {
+                console.error("Erro ao buscar torneios:", error);
+                loaderTournaments.classList.add('hidden');
+                list.innerHTML = `<p class="text-red-400 col-span-full">Erro ao carregar torneios: ${error.message}</p>`;
             });
-        });
+        }
     </script>
 </body>
 </html>
