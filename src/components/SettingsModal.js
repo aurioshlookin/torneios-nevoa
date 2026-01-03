@@ -1,16 +1,7 @@
 // --- SettingsModal.js ---
-// Modal para configurar permissões de criação de torneios
-
-// Como estamos no ambiente "no-build" com React global,
-// usamos React.useState e React.useEffect diretamente ou desestruturados do window
-const { useState, useEffect } = React;
-const { getDoc, doc, setDoc } = window.firebase.firestore;
-
-// Precisamos acessar 'db' que foi inicializado globalmente
-// Ou importar se o módulo permitir, mas aqui confiamos na global 'db' criada no config
-const db = window.db; 
 
 const SettingsModal = ({ onClose, onSave }) => {
+    // Usa as globais injetadas pelo loader
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [allowedRoles, setAllowedRoles] = useState([]);
