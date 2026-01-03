@@ -65,32 +65,59 @@
                     if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
                     let code = await res.text();
 
-                    // Regex simples para extrair imports e simular módulos
-                    code = code.replace(/import\s+(?:([\w\*\s]+),?)?\s*(?:\{([^}]+)\})?\s+from\s+['"]([^'"]+)['"];?/g, (match, def, named, source) => {
-                        if (source.startsWith('.')) return ''; // Ignora imports locais (já estamos concatenando)
-                        if (!externalImports[source]) externalImports[source] = { default: null, named: new Set() };
-                        if (def) externalImports[source].default = def.trim();
-                        if (named) named.split(',').forEach(n => externalImports[source].named.add(n.trim()));
-                        return '';
+                    // Regex para extrair imports e remover duplicatas
+                    code = code.replace(/import\s+(?:([\w\*\s,{}]+)\s+from\s+)?['"]([^'"]+)['"];?/g, (match, imports, source) => {
+                        if (source.startsWith('.')) return ''; // Ignora imports locais (arquivos já estão na lista)
+                        
+                        if (!externalImports[source]) {
+                            externalImports[source] = new Set();
+                        }
+
+                        if (imports) {
+                            // Limpa e separa os imports (ex: { useState, useEffect }, React)
+                            const cleaned = imports.replace(/[{}]/g, '').split(',').map(i => i.trim());
+                            cleaned.forEach(item => {
+                                if(item) externalImports[source].add(item);
+                            });
+                        }
+                        
+                        return ''; // Remove a linha de import original
                     });
 
-                    // Remove exports para rodar tudo no mesmo escopo
+                    // Remove exports para evitar erros no escopo único
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
+                    code = code.replace(/export\s+\{([^}]+)\};?/g, ''); // Remove export { db, auth }
                     
                     combinedCode += `\n// --- ${file} ---\n` + code + "\n";
                 }
 
+                // Reconstrói os imports no topo
                 let header = '';
-                for (const [src, data] of Object.entries(externalImports)) {
-                    const parts = [];
-                    if (data.default) parts.push(data.default);
-                    if (data.named.size > 0) parts.push(`{ ${Array.from(data.named).join(', ')} }`);
-                    header += `import ${parts.join(', ')} from '${src}';\n`;
+                for (const [source, items] of Object.entries(externalImports)) {
+                    if (items.size > 0) {
+                        const importsList = Array.from(items).join(', ');
+                        // Tenta detectar se é default ou named (simplificado)
+                        if (items.has('React')) {
+                             // Caso especial para React que pode ter default e named
+                             const named = Array.from(items).filter(i => i !== 'React');
+                             if(named.length > 0) header += `import React, { ${named.join(', ')} } from '${source}';\n`;
+                             else header += `import React from '${source}';\n`;
+                        } else {
+                             header += `import { ${importsList} } from '${source}';\n`;
+                        }
+                    } else {
+                        header += `import '${source}';\n`;
+                    }
                 }
 
                 const finalCode = header + combinedCode;
-                const output = Babel.transform(finalCode, { presets: ['react'] }).code;
+                
+                // Transforma JSX para JS
+                const output = Babel.transform(finalCode, { 
+                    presets: ['react'],
+                    filename: 'app_bundle.js' 
+                }).code;
                 
                 const script = document.createElement('script');
                 script.type = 'module';
@@ -98,8 +125,13 @@
                 document.body.appendChild(script);
 
             } catch (e) {
-                document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro ao carregar sistema</h1><p>${e.message}</p></div>`;
-                console.error(e);
+                document.body.innerHTML = `
+                    <div class="p-10 text-red-500 text-center bg-slate-800 h-screen flex flex-col justify-center items-center">
+                        <h1 class="text-2xl font-bold mb-4">Erro ao carregar sistema</h1>
+                        <pre class="bg-black p-4 rounded text-left text-xs overflow-auto max-w-2xl">${e.message}\n${e.stack}</pre>
+                        <button onclick="location.reload()" class="mt-4 bg-blue-600 px-4 py-2 rounded text-white">Recarregar</button>
+                    </div>`;
+                console.error("Loader Error:", e);
             }
         }
         loadApp();
