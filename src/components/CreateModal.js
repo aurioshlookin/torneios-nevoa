@@ -1,30 +1,20 @@
 // --- CreateModal.js ---
-// Modal para criar novos torneios
-
-const { useState } = React;
-// Assumindo que FORMAT_INFO está disponível globalmente ou via import se fosse módulo padrão
-// No nosso loader, ele está global se foi carregado antes. Mas constants.js não expõe globalmente por padrão no loader atual.
-// Vamos assumir que constants.js roda e define window.FORMAT_INFO ou similar, ou o código do modal precisa ser ajustado.
-// NOTA: O loader atual concatena tudo. Se constants.js exporta, o 'export' foi removido e virou 'const FORMAT_INFO'.
-// Então FORMAT_INFO está disponível no escopo do bundle.
 
 const CreateModal = ({ onClose, onCreate }) => {
+    // Usa useState global
     const [form, setForm] = useState({
         title: '', date: '', description: '',
         matchFormat: '1x1', structure: 'single_elim', shuffle: 'random'
     });
 
-    // FORMAT_INFO deve estar acessível pelo escopo do bundle
     const [descPreview, setDescPreview] = useState(FORMAT_INFO.matches['1x1']);
 
     const handleChange = (e) => {
         const { id, value } = e.target;
-        // Remove prefixo 't-' se houver (ids dos inputs)
         const key = id.replace('t-', '');
         const newForm = { ...form, [key]: value };
         setForm(newForm);
 
-        // Atualiza preview se mudar selects
         if(['matchFormat', 'structure', 'shuffle'].includes(key)) {
             const desc = (
                 <span>
@@ -47,7 +37,7 @@ const CreateModal = ({ onClose, onCreate }) => {
             <div className="bg-slate-800 w-full max-w-2xl rounded-xl border border-slate-600 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
                     <h3 className="font-bold text-lg text-green-400"><i className="fas fa-calendar-plus mr-2"></i>Agendar Evento</h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white"><i className="fas fa-times"></i></button>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
                 </div>
                 
                 <div className="p-6 overflow-y-auto flex-grow">
