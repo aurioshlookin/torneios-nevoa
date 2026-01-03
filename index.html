@@ -15,11 +15,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Firebase Compat -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <style>
         .glass-panel { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); }
         .toast-enter { transform: translateX(100%); opacity: 0; }
@@ -29,7 +24,41 @@
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
     <div id="root"></div>
 
+    <!-- Firebase Setup Module -->
     <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth, signInWithCustomToken, signOut, onAuthStateChanged, 
+            setPersistence, browserLocalPersistence 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { 
+            getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Expose Firebase functions globally
+        window.firebase = {
+            initializeApp,
+            auth: { 
+                getAuth, signInWithCustomToken, signOut, onAuthStateChanged, 
+                setPersistence, browserLocalPersistence 
+            },
+            firestore: { 
+                getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot 
+            }
+        };
+
+        // Expose React globals
+        window.React = React;
+        window.useState = React.useState;
+        window.useEffect = React.useEffect;
+        window.createRoot = ReactDOM.createRoot;
+
+        // Signal that dependencies are ready
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
+    <!-- App Loader -->
+    <script>
         const APP_VERSION = Date.now();
 
         const files = [
@@ -40,7 +69,7 @@
             'src/components/TournamentCard.js',
             'src/components/CreateModal.js',
             'src/components/DetailsModal.js',
-            'src/components/BracketsModal.js', // Novo modal de chaves
+            'src/components/BracketsModal.js',
             'src/components/StartModal.js',
             'src/components/SettingsModal.js',
             'src/app.js'
@@ -49,22 +78,13 @@
         async function loadApp() {
             try {
                 let combinedCode = "";
-                
-                // Pré-carrega globais para o Babel
-                window.React = React;
-                window.useState = React.useState;
-                window.useEffect = React.useEffect;
-                window.createRoot = ReactDOM.createRoot;
-                
-                // Expondo Firebase globalmente
-                window.firebase = firebase;
 
                 for (const file of files) {
                     const res = await fetch(`${file}?v=${APP_VERSION}`);
                     if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
                     let code = await res.text();
 
-                    // Limpeza de imports/exports para bundle único
+                    // Remove imports/exports for bundle
                     code = code.replace(/^import\s+.*$/gm, '');
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
@@ -87,8 +107,14 @@
                 document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro de Carregamento</h1><p>${e.message}</p></div>`;
             }
         }
+
+        // Wait for Firebase module to load before loading the app
+        window.addEventListener('firebase-ready', loadApp);
         
-        loadApp();
+        // Fallback in case event already fired (unlikely with module script order but safe)
+        if (window.firebase) {
+            loadApp();
+        }
     </script>
 </body>
 </html>
