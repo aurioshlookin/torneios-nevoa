@@ -57,10 +57,13 @@ const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user
                     </div>
                     
                     <div className="mt-4 flex gap-2 flex-wrap">
-                        {/* Botão de Chaves (Para todos, se iniciado) */}
-                        {(status === 'started' || status === 'finished') && logicMode === 'elimination' && (
+                        {/* MUDANÇA AQUI: Removemos a restrição 'logicMode === elimination'. 
+                            Agora o botão aparece sempre que estiver iniciado/finalizado. 
+                            O BracketsModal vai tratar o que mostrar. */}
+                        {(status === 'started' || status === 'finished') && (
                             <button onClick={() => onOpenBrackets(tournament)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold shadow transition flex items-center gap-2">
-                                <i className="fas fa-sitemap"></i> Ver Chaves / Partidas
+                                <i className="fas fa-sitemap"></i> 
+                                {logicMode === 'elimination' ? 'Ver Chaves / Partidas' : 'Ver Status / Lista'}
                             </button>
                         )}
 
