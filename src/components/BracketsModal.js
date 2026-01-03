@@ -57,7 +57,7 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
                     {Object.keys(rounds).map(roundNum => {
                         const isFinal = parseInt(roundNum) === totalRounds;
                         return (
-                            <div key={roundNum} className="flex flex-col justify-center gap-8 w-72">
+                            <div key={roundNum} className="flex flex-col justify-center gap-8 w-80">
                                 <h4 className={`text-center font-bold uppercase tracking-widest text-sm py-2 rounded border shadow-lg mb-4
                                     ${isFinal ? 'bg-yellow-900/40 text-yellow-400 border-yellow-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}
                                 `}>
@@ -85,7 +85,7 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
                                                     {match.note && <span className="text-yellow-500/70">{match.note}</span>}
                                                 </div>
 
-                                                {/* Player 1 */}
+                                                {/* Player/Team 1 */}
                                                 <div 
                                                     onClick={() => hasPermission && !hasWinner && p1 && p2 && onSetWinner(tournament.id, match.matchId, p1.id)}
                                                     className={`p-3 flex justify-between items-center transition relative
@@ -93,9 +93,11 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
                                                         ${!hasWinner && p1 && p2 && hasPermission ? 'hover:bg-slate-700 cursor-pointer hover:text-white' : ''}
                                                         ${!p1 ? 'opacity-50' : ''}
                                                     `}
+                                                    title={p1 ? p1.name : ''}
                                                 >
-                                                    <span className="truncate max-w-[180px]">{p1 ? p1.name : 'Aguardando...'}</span>
-                                                    {isWinnerP1 && <i className="fas fa-check-circle text-green-500"></i>}
+                                                    {/* Nome com suporte a quebra de linha para times grandes */}
+                                                    <span className="truncate max-w-[200px] text-sm block">{p1 ? p1.name : 'Aguardando...'}</span>
+                                                    {isWinnerP1 && <i className="fas fa-check-circle text-green-500 flex-shrink-0 ml-2"></i>}
                                                     {/* Indicador de clique para admin */}
                                                     {!hasWinner && p1 && p2 && hasPermission && (
                                                         <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 flex items-center justify-center">
@@ -108,7 +110,7 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
                                                     <div className="absolute left-1/2 -translate-x-1/2 -top-2 bg-slate-700 text-[9px] px-1 rounded text-slate-400 font-bold">VS</div>
                                                 </div>
 
-                                                {/* Player 2 */}
+                                                {/* Player/Team 2 */}
                                                 <div 
                                                     onClick={() => hasPermission && !hasWinner && p1 && p2 && onSetWinner(tournament.id, match.matchId, p2.id)}
                                                     className={`p-3 flex justify-between items-center transition relative
@@ -116,9 +118,10 @@ const BracketsModal = ({ tournament, onClose, onSetWinner, user, hasPermission }
                                                         ${!hasWinner && p1 && p2 && hasPermission ? 'hover:bg-slate-700 cursor-pointer hover:text-white' : ''}
                                                         ${!p2 && match.note !== 'Bye' ? 'opacity-50' : ''}
                                                     `}
+                                                    title={p2 ? p2.name : ''}
                                                 >
-                                                    <span className="truncate max-w-[180px]">{p2 ? p2.name : (match.note === 'Bye' ? '-' : 'Aguardando...')}</span>
-                                                    {isWinnerP2 && <i className="fas fa-check-circle text-green-500"></i>}
+                                                    <span className="truncate max-w-[200px] text-sm block">{p2 ? p2.name : (match.note === 'Bye' ? '-' : 'Aguardando...')}</span>
+                                                    {isWinnerP2 && <i className="fas fa-check-circle text-green-500 flex-shrink-0 ml-2"></i>}
                                                     {!hasWinner && p1 && p2 && hasPermission && (
                                                         <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 flex items-center justify-center">
                                                             <span className="text-[10px] bg-black/50 px-2 rounded">Venceu?</span>
