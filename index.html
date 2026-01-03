@@ -69,7 +69,7 @@
             'src/components/TournamentCard.js',
             'src/components/CreateModal.js',
             'src/components/DetailsModal.js',
-            'src/components/BracketsModal.js',
+            'src/components/BracketsModal.js', // Confirmando presença
             'src/components/StartModal.js',
             'src/components/SettingsModal.js',
             'src/app.js'
@@ -81,7 +81,9 @@
 
                 for (const file of files) {
                     const res = await fetch(`${file}?v=${APP_VERSION}`);
-                    if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
+                    if (!res.ok) {
+                        throw new Error(`Arquivo não encontrado: ${file} (Status: ${res.status})`);
+                    }
                     let code = await res.text();
 
                     // Remove imports/exports for bundle
@@ -104,7 +106,13 @@
 
             } catch (e) {
                 console.error("Loader Error:", e);
-                document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro de Carregamento</h1><p>${e.message}</p></div>`;
+                document.body.innerHTML = `
+                    <div class="p-10 text-red-500 text-center bg-slate-800 min-h-screen flex flex-col items-center justify-center">
+                        <i class="fas fa-bug text-4xl mb-4"></i>
+                        <h1 class="text-xl font-bold mb-2">Erro de Carregamento</h1>
+                        <p class="mb-4">${e.message}</p>
+                        <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">Tentar Novamente</button>
+                    </div>`;
             }
         }
 
