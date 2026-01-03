@@ -6,94 +6,149 @@
     <title>Central de Torneios</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
 
     <!-- Navbar -->
-    <nav class="bg-slate-800 p-4 border-b border-slate-700">
+    <nav class="bg-slate-800 p-4 border-b border-slate-700 sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-yellow-500"><i class="fas fa-trophy"></i> Arena Hub</h1>
-            <div id="auth-container">
-                <!-- Botão de Login (Visível apenas na tela de login, mas mantido aqui para controle) -->
-                <div id="user-info" class="hidden flex items-center gap-3">
-                    <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-slate-600">
-                    <span id="username" class="font-medium"></span>
-                    <button id="logout-btn" class="text-sm text-red-400 hover:text-red-300 ml-2">
-                        <i class="fas fa-sign-out-alt"></i> Sair
+            <h1 class="text-2xl font-bold text-yellow-500 tracking-wider">
+                <i class="fas fa-trophy mr-2"></i>Arena Hub
+            </h1>
+            
+            <div id="auth-container" class="flex items-center gap-4">
+                <!-- Botão de Configuração (Só aparece para Super Admins) -->
+                <button id="settings-btn" class="hidden text-slate-400 hover:text-white transition p-2 rounded-full hover:bg-slate-700" title="Configurações de Permissão">
+                    <i class="fas fa-cog fa-lg"></i>
+                </button>
+
+                <!-- Info do Usuário -->
+                <div id="user-info" class="hidden flex items-center gap-3 bg-slate-700/50 pr-4 pl-1 py-1 rounded-full border border-slate-600">
+                    <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-yellow-500">
+                    <span id="username" class="font-medium text-sm"></span>
+                    <button id="logout-btn" class="text-xs text-red-400 hover:text-red-300 ml-2 border-l border-slate-600 pl-3">
+                        SAIR
                     </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Tela de Login (Aparece se não estiver logado) -->
-    <div id="login-screen" class="flex-grow flex flex-col items-center justify-center p-6 text-center">
-        <div class="bg-slate-800 p-8 rounded-lg shadow-xl border border-slate-700 max-w-md w-full">
-            <div class="text-5xl text-yellow-500 mb-4">
-                <i class="fas fa-lock"></i>
+    <!-- Modal de Configuração (Permissões) -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-slate-800 w-full max-w-lg rounded-xl border border-slate-600 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                <h3 class="font-bold text-lg"><i class="fas fa-user-shield text-yellow-500 mr-2"></i>Quem pode criar torneio?</h3>
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <h2 class="text-2xl font-bold mb-2">Acesso Restrito</h2>
-            <p class="text-slate-400 mb-6">Faça login com sua conta do Discord para visualizar e gerenciar os torneios.</p>
             
-            <button id="login-btn" class="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3 px-4 rounded transition flex items-center justify-center gap-2">
-                <i class="fab fa-discord"></i> Entrar com Discord
-            </button>
-            
-            <div id="loading-btn" class="hidden w-full bg-slate-700 text-slate-300 font-bold py-3 px-4 rounded flex items-center justify-center gap-2 cursor-wait">
-                <i class="fas fa-spinner fa-spin"></i> Conectando...
+            <div class="p-6 overflow-y-auto flex-grow">
+                <p class="text-sm text-slate-400 mb-4">Selecione os cargos do Discord que terão permissão para acessar o painel de criação.</p>
+                <div id="roles-list-loader" class="text-center py-4"><i class="fas fa-spinner fa-spin text-yellow-500"></i> Carregando cargos do servidor...</div>
+                <div id="roles-list" class="space-y-2">
+                    <!-- Checkboxes de cargos injetados aqui -->
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-700 bg-slate-900/50 flex justify-end">
+                <button id="save-permissions-btn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded font-bold transition">
+                    Salvar Permissões
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Área Principal (Aparece APENAS se estiver logado) -->
+    <!-- Tela de Login -->
+    <div id="login-screen" class="flex-grow flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+        <div class="bg-slate-800 p-10 rounded-2xl shadow-2xl border border-slate-700 max-w-md w-full relative overflow-hidden">
+            <!-- Decorativo -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl"></div>
+
+            <div class="text-6xl text-yellow-500 mb-6 drop-shadow-lg">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <h2 class="text-3xl font-bold mb-3">Bem-vindo à Arena</h2>
+            <p class="text-slate-400 mb-8 leading-relaxed">Faça login com seu Discord para visualizar a agenda, confirmar presença e gerenciar eventos.</p>
+            
+            <button id="login-btn" class="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-3 shadow-lg group">
+                <i class="fab fa-discord text-xl group-hover:scale-110 transition"></i> Entrar com Discord
+            </button>
+            
+            <div id="loading-btn" class="hidden w-full bg-slate-700 text-slate-300 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-wait">
+                <i class="fas fa-circle-notch fa-spin"></i> Conectando...
+            </div>
+        </div>
+    </div>
+
+    <!-- Área Principal -->
     <main id="main-content" class="hidden container mx-auto p-6 flex-grow">
         
-        <!-- Painel Admin -->
-        <section id="admin-panel" class="hidden mb-10 bg-slate-800 p-6 rounded-lg border border-slate-700 shadow-lg relative overflow-hidden">
-            <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                <i class="fas fa-crown text-9xl text-yellow-500"></i>
+        <!-- Painel de Criação (Só aparece se tiver permissão) -->
+        <section id="admin-panel" class="hidden mb-12 bg-gradient-to-r from-slate-800 to-slate-800/50 p-1 rounded-2xl border border-slate-700 shadow-xl relative group">
+            <div class="bg-slate-900 rounded-xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:opacity-10 transition duration-700">
+                    <i class="fas fa-dragon text-9xl text-yellow-500 transform rotate-12 translate-x-10 -translate-y-4"></i>
+                </div>
+
+                <h2 class="text-xl font-bold mb-6 text-green-400 flex items-center gap-2">
+                    <span class="bg-green-500/10 p-2 rounded-lg"><i class="fas fa-plus"></i></span>
+                    Novo Torneio
+                </h2>
+                
+                <form id="create-tournament-form" class="grid gap-6 md:grid-cols-2 relative z-10">
+                    <div class="col-span-2">
+                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1 font-bold ml-1">Título</label>
+                        <input type="text" id="t-title" required placeholder="Ex: Campeonato Semanal #42" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1 font-bold ml-1">Data/Horário</label>
+                        <input type="text" id="t-date" placeholder="Ex: Sábado às 19:00" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 outline-none transition">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs uppercase tracking-wider text-slate-500 mb-1 font-bold ml-1">Descrição</label>
+                        <textarea id="t-desc" rows="3" placeholder="Regras, modo de jogo, premiação..." required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 focus:border-yellow-500 outline-none transition"></textarea>
+                    </div>
+                    <div class="col-span-2 flex justify-end">
+                        <button type="submit" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:shadow-green-500/20 transition transform active:scale-95 flex items-center gap-2">
+                            Publicar Evento <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
             </div>
-            <h2 class="text-xl font-bold mb-4 text-green-400 border-b border-slate-700 pb-2">
-                <i class="fas fa-plus-circle"></i> Criar Novo Torneio
-            </h2>
-            <form id="create-tournament-form" class="grid gap-4 md:grid-cols-2 relative z-10">
-                <div class="col-span-2">
-                    <label class="block text-sm text-slate-400 mb-1 font-bold">Título do Evento</label>
-                    <input type="text" id="t-title" required placeholder="Ex: Torneio de Sábado" class="w-full bg-slate-900 border border-slate-600 rounded p-2 focus:border-yellow-500 outline-none text-white placeholder-slate-600 transition">
-                </div>
-                <div>
-                    <label class="block text-sm text-slate-400 mb-1 font-bold">Data/Hora</label>
-                    <input type="text" id="t-date" placeholder="Ex: Sábado às 19h" required class="w-full bg-slate-900 border border-slate-600 rounded p-2 focus:border-yellow-500 outline-none text-white placeholder-slate-600 transition">
-                </div>
-                <div class="col-span-2">
-                    <label class="block text-sm text-slate-400 mb-1 font-bold">Descrição</label>
-                    <textarea id="t-desc" rows="3" placeholder="Detalhes, regras, prêmios..." required class="w-full bg-slate-900 border border-slate-600 rounded p-2 focus:border-yellow-500 outline-none text-white placeholder-slate-600 transition"></textarea>
-                </div>
-                <button type="submit" class="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded mt-2 shadow-lg transition transform hover:scale-[1.01] active:scale-95">
-                    Lançar Torneio 🚀
-                </button>
-            </form>
         </section>
 
-        <!-- Lista -->
-        <div class="flex items-center gap-3 mb-6">
-            <h2 class="text-2xl font-bold border-l-4 border-yellow-500 pl-3">Torneios Ativos</h2>
+        <!-- Lista de Torneios -->
+        <div class="flex items-center gap-4 mb-8">
+            <h2 class="text-3xl font-bold text-white tracking-tight">Próximos Eventos</h2>
+            <div class="h-1 flex-grow bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full w-24 bg-yellow-500/50 rounded-full"></div>
+            </div>
             <div id="loader-tournaments" class="hidden text-yellow-500"><i class="fas fa-sync fa-spin"></i></div>
         </div>
         
-        <div id="tournaments-list" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <!-- Cards serão injetados aqui -->
+        <div id="tournaments-list" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <!-- Cards injetados via JS -->
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-600 text-center p-4 text-xs border-t border-slate-800 mt-auto">
-        &copy; 2024 Arena Hub - Sistema de Torneios
+    <footer class="bg-slate-900 border-t border-slate-800 p-6 text-center mt-auto">
+        <p class="text-slate-500 text-sm">Powered by <span class="text-yellow-500 font-bold">Arena Hub</span> &bull; Sistema Integrado Discord</p>
     </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, setDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
 
@@ -108,244 +163,280 @@
             measurementId: "G-L166F59V2D"
         };
         
-        // --- DADOS DO DISCORD ---
         const DISCORD_CLIENT_ID = "1453817939265589452"; 
-        
-        // --- URL DO SEU BOT NA SQUARE CLOUD ---
         const BOT_API_URL = "https://torneionevoa.squareweb.app/auth/discord";
 
-        // --- ADICIONE SEU ID AQUI PARA TER PERMISSÃO DE CRIAR ---
-        // Você pode ver seu ID no console do navegador (F12) após logar
-        const ADMIN_IDS = ["SEU_ID_DISCORD_AQUI", "1410456333391761462", "1410661305227935875"]; 
+        // --- IDs DOS DONOS (ACESSO TOTAL AO PAINEL DE CONFIG) ---
+        // Coloque SEU ID aqui para poder configurar a primeira vez!
+        const SUPER_ADMINS = ["SEU_ID_DISCORD_AQUI", "1410456333391761462", "1410661305227935875"]; 
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const analytics = getAnalytics(app);
 
-        // Define persistência LOCAL (Login dura mesmo fechando a aba)
-        setPersistence(auth, browserLocalPersistence).catch(error => {
-            console.error("Erro na persistência:", error);
-        });
+        setPersistence(auth, browserLocalPersistence).catch(console.error);
 
-        // Elementos UI
-        const loginBtn = document.getElementById('login-btn');
-        const loadingBtn = document.getElementById('loading-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userInfo = document.getElementById('user-info');
-        const loginScreen = document.getElementById('login-screen');
-        const mainContent = document.getElementById('main-content');
-        const adminPanel = document.getElementById('admin-panel');
-        const form = document.getElementById('create-tournament-form');
-        const list = document.getElementById('tournaments-list');
-        const loaderTournaments = document.getElementById('loader-tournaments');
+        // Estado Local
+        let currentUserRoles = []; 
 
-        // --- LÓGICA DE LOGIN ---
-        loginBtn.addEventListener('click', () => {
+        // Elementos DOM
+        const els = {
+            loginBtn: document.getElementById('login-btn'),
+            loadingBtn: document.getElementById('loading-btn'),
+            loginScreen: document.getElementById('login-screen'),
+            mainContent: document.getElementById('main-content'),
+            userInfo: document.getElementById('user-info'),
+            adminPanel: document.getElementById('admin-panel'),
+            settingsBtn: document.getElementById('settings-btn'),
+            settingsModal: document.getElementById('settings-modal'),
+            rolesList: document.getElementById('roles-list'),
+            savePermsBtn: document.getElementById('save-permissions-btn')
+        };
+
+        // --- LOGIN ---
+        els.loginBtn.addEventListener('click', () => {
             const redirectUri = window.location.origin + window.location.pathname;
-            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
-            window.location.href = authUrl;
+            window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
         });
 
-        // Callback do Login (Code from Discord)
+        // Callback Login
         window.addEventListener('load', async () => {
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
-
+            const code = new URLSearchParams(window.location.search).get('code');
             if (code) {
-                // Limpa URL
                 window.history.replaceState({}, document.title, window.location.pathname);
-                
-                toggleLoginLoading(true);
-
+                toggleLoading(true);
                 try {
-                    const redirectUri = window.location.origin + window.location.pathname;
-                    const response = await fetch(BOT_API_URL, {
+                    const res = await fetch(BOT_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code, redirectUri })
+                        body: JSON.stringify({ code, redirectUri: window.location.origin + window.location.pathname })
                     });
-
-                    if (!response.ok) {
-                        const errText = await response.text();
-                        throw new Error(`Falha API Bot: ${errText}`);
-                    }
-
-                    const data = await response.json();
-                    await signInWithCustomToken(auth, data.token);
-                    // O onAuthStateChanged vai lidar com o resto
+                    if (!res.ok) throw new Error(await res.text());
                     
-                } catch (error) {
-                    console.error("Erro login:", error);
-                    alert("Erro ao logar: " + error.message);
-                    toggleLoginLoading(false);
+                    const data = await res.json();
+                    
+                    // SALVA CARGOS NO STORAGE PARA USAR DEPOIS DO AUTH STATE CHANGED
+                    localStorage.setItem('discord_roles', JSON.stringify(data.roles || []));
+                    
+                    await signInWithCustomToken(auth, data.token);
+                } catch (e) {
+                    alert("Erro login: " + e.message);
+                    toggleLoading(false);
                 }
             }
         });
 
-        function toggleLoginLoading(isLoading) {
-            if(isLoading) {
-                loginBtn.classList.add('hidden');
-                loadingBtn.classList.remove('hidden');
+        function toggleLoading(isLoading) {
+            els.loginBtn.classList.toggle('hidden', isLoading);
+            els.loadingBtn.classList.toggle('hidden', !isLoading);
+        }
+
+        els.logoutBtn = document.getElementById('logout-btn');
+        els.logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('discord_roles');
+            signOut(auth);
+        });
+
+        // --- MONITOR AUTH ---
+        onAuthStateChanged(auth, async (user) => {
+            toggleLoading(false);
+            if (user) {
+                // Configura UI
+                els.loginScreen.classList.add('hidden');
+                els.mainContent.classList.remove('hidden');
+                els.userInfo.classList.remove('hidden');
+                document.getElementById('username').innerText = user.displayName;
+                document.getElementById('user-avatar').src = user.photoURL;
+
+                // Carrega cargos salvos
+                try {
+                    currentUserRoles = JSON.parse(localStorage.getItem('discord_roles') || "[]");
+                } catch(e) { currentUserRoles = []; }
+
+                // Verifica Permissões
+                await checkPermissions(user.uid);
+                startTournamentListener();
+
+                // Botão de Settings só para Super Admin
+                if (SUPER_ADMINS.includes(user.uid)) {
+                    els.settingsBtn.classList.remove('hidden');
+                    els.settingsBtn.onclick = openSettingsModal;
+                }
+
             } else {
-                loginBtn.classList.remove('hidden');
-                loadingBtn.classList.add('hidden');
+                els.loginScreen.classList.remove('hidden');
+                els.mainContent.classList.add('hidden');
+                els.userInfo.classList.add('hidden');
+                els.adminPanel.classList.add('hidden');
+                els.settingsBtn.classList.add('hidden');
+            }
+        });
+
+        // --- SISTEMA DE PERMISSÕES ---
+        async function checkPermissions(userId) {
+            // Se for Super Admin, libera direto
+            if (SUPER_ADMINS.includes(userId)) {
+                els.adminPanel.classList.remove('hidden');
+                return;
+            }
+
+            // Busca quais cargos são permitidos no banco
+            try {
+                const docSnap = await getDoc(doc(db, "config", "permissions"));
+                if (docSnap.exists()) {
+                    const allowedRoles = docSnap.data().allowed_create_roles || [];
+                    // Verifica se o usuário tem algum cargo permitido
+                    const hasPermission = currentUserRoles.some(roleId => allowedRoles.includes(roleId));
+                    
+                    if (hasPermission) els.adminPanel.classList.remove('hidden');
+                    else els.adminPanel.classList.add('hidden');
+                }
+            } catch (e) { console.error("Erro check permissions:", e); }
+        }
+
+        // --- CONFIGURAÇÃO (MODAL) ---
+        async function openSettingsModal() {
+            els.settingsModal.classList.remove('hidden');
+            const loader = document.getElementById('roles-list-loader');
+            
+            // 1. Busca cargos do servidor salvos pelo Bot
+            const rolesSnap = await getDoc(doc(db, "config", "discord_roles"));
+            // 2. Busca permissões atuais
+            const permsSnap = await getDoc(doc(db, "config", "permissions"));
+            const currentAllowed = permsSnap.exists() ? (permsSnap.data().allowed_create_roles || []) : [];
+
+            loader.classList.add('hidden');
+            els.rolesList.innerHTML = "";
+
+            if (rolesSnap.exists()) {
+                const roles = rolesSnap.data().list || [];
+                roles.forEach(role => {
+                    const isChecked = currentAllowed.includes(role.id) ? 'checked' : '';
+                    // Não mostra cargo @everyone
+                    if (role.name === '@everyone') return;
+
+                    const html = `
+                        <label class="flex items-center p-3 rounded hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-slate-600 transition">
+                            <input type="checkbox" class="role-checkbox w-5 h-5 rounded border-slate-600 text-green-600 focus:ring-offset-slate-800" value="${role.id}" ${isChecked}>
+                            <span class="ml-3 font-medium" style="color: ${role.color !== '#000000' ? role.color : '#e2e8f0'}">${role.name}</span>
+                        </label>
+                    `;
+                    els.rolesList.innerHTML += html;
+                });
+            } else {
+                els.rolesList.innerHTML = "<p class='text-red-400'>O Bot ainda não sincronizou os cargos. Reinicie o Bot.</p>";
             }
         }
 
-        logoutBtn.addEventListener('click', () => signOut(auth));
-
-        // --- MONITOR DE ESTADO DO USUÁRIO ---
-        onAuthStateChanged(auth, (user) => {
-            // Se estiver na tela de loading do login, reseta
-            toggleLoginLoading(false);
-
-            if (user) {
-                // LOGADO
-                loginScreen.classList.add('hidden');
-                mainContent.classList.remove('hidden'); // Mostra o conteúdo principal
-                userInfo.classList.remove('hidden');
-                
-                const discordId = user.uid;
-                console.log("Usuário logado ID:", discordId); // Debug para você ver seu ID
-
-                document.getElementById('username').innerText = user.displayName || "Usuário";
-                document.getElementById('user-avatar').src = user.photoURL || `https://cdn.discordapp.com/embed/avatars/0.png`;
-
-                if (ADMIN_IDS.includes(discordId)) {
-                    console.log("Modo Admin ATIVADO");
-                    adminPanel.classList.remove('hidden');
-                } else {
-                    console.log("Modo Admin DESATIVADO (ID não está na lista)");
-                }
-                
-                // Inicia listener de torneios apenas quando logado
-                iniciarListenerTorneios();
-
-            } else {
-                // DESLOGADO
-                loginScreen.classList.remove('hidden'); // Mostra tela de login
-                mainContent.classList.add('hidden');    // Esconde conteúdo
-                userInfo.classList.add('hidden');
-                adminPanel.classList.add('hidden');
-                list.innerHTML = ""; // Limpa lista por segurança
-            }
+        els.savePermsBtn.addEventListener('click', async () => {
+            const checkboxes = document.querySelectorAll('.role-checkbox:checked');
+            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            els.savePermsBtn.innerText = "Salvando...";
+            await setDoc(doc(db, "config", "permissions"), { allowed_create_roles: selectedIds }, { merge: true });
+            
+            els.savePermsBtn.innerText = "Salvo!";
+            setTimeout(() => {
+                els.savePermsBtn.innerText = "Salvar Permissões";
+                els.settingsModal.classList.add('hidden');
+                // Recarrega permissão do usuário atual pra ver se mudou algo
+                if (auth.currentUser) checkPermissions(auth.currentUser.uid);
+            }, 1000);
         });
 
         // --- CRIAR TORNEIO ---
-        form.addEventListener('submit', async (e) => {
+        const createForm = document.getElementById('create-tournament-form');
+        createForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Verifica auth de novo por segurança
-            if(!auth.currentUser) return alert("Você precisa estar logado.");
-
-            const btn = form.querySelector('button');
-            const originalText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = "Enviando...";
-
-            const title = document.getElementById('t-title').value;
-            const date = document.getElementById('t-date').value;
-            const desc = document.getElementById('t-desc').value;
+            const btn = createForm.querySelector('button');
+            const oldText = btn.innerHTML;
+            btn.disabled = true; 
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
 
             try {
-                console.log("Tentando criar torneio:", { title, date, desc });
-                
                 await addDoc(collection(db, "tournaments"), {
-                    title, 
-                    date, 
-                    description: desc,
-                    status: "pending", 
-                    createdAt: new Date(), 
+                    title: document.getElementById('t-title').value,
+                    date: document.getElementById('t-date').value,
+                    description: document.getElementById('t-desc').value,
+                    status: "pending",
+                    createdAt: new Date(),
                     createdBy: auth.currentUser.uid,
-                    creatorName: auth.currentUser.displayName,
                     participants: []
                 });
-                
-                alert("Torneio enviado para o Bot com sucesso!");
-                form.reset();
-            } catch (error) { 
-                console.error("Erro Firestore:", error);
-                alert("Erro ao criar torneio: " + error.message); 
-            } finally {
-                btn.disabled = false;
-                btn.innerText = originalText;
-            }
+                alert("Sucesso! O Bot postará em breve.");
+                createForm.reset();
+            } catch (e) { alert("Erro: " + e.message); }
+            finally { btn.disabled = false; btn.innerHTML = oldText; }
         });
 
-        // --- LISTAR TORNEIOS ---
-        let unsubscribeTorneios = null;
-
-        function iniciarListenerTorneios() {
-            if(unsubscribeTorneios) return; // Já está ouvindo
-
-            loaderTournaments.classList.remove('hidden');
-            const q = query(collection(db, "tournaments"), orderBy("createdAt", "desc"));
+        // --- LISTAGEM ---
+        function startTournamentListener() {
+            const list = document.getElementById('tournaments-list');
+            const loader = document.getElementById('loader-tournaments');
             
-            unsubscribeTorneios = onSnapshot(q, (snapshot) => {
-                loaderTournaments.classList.add('hidden');
+            loader.classList.remove('hidden');
+            const q = query(collection(db, "tournaments"), orderBy("createdAt", "desc"));
+
+            onSnapshot(q, snapshot => {
+                loader.classList.add('hidden');
                 list.innerHTML = "";
                 
                 if (snapshot.empty) {
-                    list.innerHTML = `
-                        <div class="col-span-full text-center p-10 bg-slate-800 rounded-lg border border-slate-700 border-dashed opacity-70">
-                            <i class="fas fa-wind text-4xl mb-3 text-slate-500"></i>
-                            <p class="text-slate-400">Nenhum torneio ativo no momento.</p>
-                        </div>
-                    `;
+                    list.innerHTML = `<div class="col-span-full text-center text-slate-500 py-10">Nenhum evento encontrado.</div>`;
                     return;
                 }
 
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if(data.status === 'finished') return;
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    if(d.status === 'finished') return;
+
+                    const conf = (d.participants||[]).filter(p=>p.status==='confirmed').length;
+                    const maybe = (d.participants||[]).filter(p=>p.status==='maybe').length;
+                    const declined = (d.participants||[]).filter(p=>p.status==='declined').length;
                     
-                    const conf = (data.participants||[]).filter(p=>p.status==='confirmed').length;
-                    const maybe = (data.participants||[]).filter(p=>p.status==='maybe').length;
-                    const declined = (data.participants||[]).filter(p=>p.status==='declined').length;
-                    
-                    // Status Badge Logic
-                    let statusHtml = '';
-                    if(data.status === 'pending') {
-                        statusHtml = '<span class="bg-yellow-900 text-yellow-300 text-xs px-2 py-1 rounded border border-yellow-700 animate-pulse"><i class="fas fa-cog fa-spin"></i> Processando...</span>';
-                    } else {
-                        statusHtml = '<span class="bg-green-900 text-green-300 text-xs px-2 py-1 rounded border border-green-700">Aberto</span>';
-                    }
+                    const statusTag = d.status === 'pending' 
+                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 animate-pulse">PROCESSANDO</span>`
+                        : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">ABERTO</span>`;
 
                     list.innerHTML += `
-                        <div class="bg-slate-800 rounded-lg border border-slate-700 p-0 overflow-hidden hover:border-yellow-500 transition shadow-lg group flex flex-col h-full">
-                            <div class="p-5 flex-grow">
-                                <div class="flex justify-between items-start mb-3">
-                                    <h3 class="font-bold text-lg text-white group-hover:text-yellow-400 transition">${data.title}</h3>
-                                    ${statusHtml}
+                        <div class="bg-slate-800 rounded-xl border border-slate-700 hover:border-yellow-500/50 transition duration-300 group overflow-hidden flex flex-col h-full shadow-lg">
+                            <div class="p-5 flex-grow relative">
+                                <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition">
+                                    <i class="fas fa-trophy text-6xl text-yellow-500"></i>
                                 </div>
                                 
-                                <div class="flex items-center gap-2 text-sm text-yellow-500 mb-3 bg-slate-900/50 p-2 rounded w-fit">
-                                    <i class="far fa-calendar-alt"></i>
-                                    <span>${data.date}</span>
+                                <div class="flex justify-between items-start mb-4">
+                                    ${statusTag}
+                                    <span class="text-xs text-slate-500 font-mono">#${doc.id.substr(0,4)}</span>
                                 </div>
 
-                                <p class="text-slate-400 text-sm mb-4 line-clamp-3">${data.description}</p>
+                                <h3 class="font-bold text-lg text-white mb-2 leading-tight group-hover:text-yellow-400 transition">${d.title}</h3>
+                                
+                                <div class="flex items-center gap-2 text-xs text-yellow-500 font-medium mb-4 bg-slate-900/50 w-fit px-2 py-1 rounded">
+                                    <i class="far fa-clock"></i> ${d.date}
+                                </div>
+                                
+                                <p class="text-slate-400 text-sm line-clamp-3 mb-4 border-l-2 border-slate-700 pl-3">${d.description}</p>
                             </div>
 
-                            <div class="bg-slate-900/80 p-3 border-t border-slate-700 grid grid-cols-3 gap-2 text-center text-xs">
-                                <div class="text-green-400 font-bold bg-slate-800 p-1 rounded" title="Confirmados">
-                                    <i class="fas fa-check mb-1 block"></i> ${conf}
+                            <div class="bg-slate-900/50 border-t border-slate-700/50 p-3 grid grid-cols-3 gap-px text-center">
+                                <div class="text-green-400">
+                                    <div class="text-lg font-bold">${conf}</div>
+                                    <div class="text-[10px] uppercase text-slate-500">Vão</div>
                                 </div>
-                                <div class="text-yellow-400 font-bold bg-slate-800 p-1 rounded" title="Talvez">
-                                    <i class="fas fa-question mb-1 block"></i> ${maybe}
+                                <div class="text-yellow-400 border-l border-r border-slate-700">
+                                    <div class="text-lg font-bold">${maybe}</div>
+                                    <div class="text-[10px] uppercase text-slate-500">Talvez</div>
                                 </div>
-                                <div class="text-red-400 font-bold bg-slate-800 p-1 rounded" title="Não vão">
-                                    <i class="fas fa-times mb-1 block"></i> ${declined}
+                                <div class="text-red-400">
+                                    <div class="text-lg font-bold">${declined}</div>
+                                    <div class="text-[10px] uppercase text-slate-500">Não</div>
                                 </div>
                             </div>
                         </div>
                     `;
                 });
-            }, (error) => {
-                console.error("Erro ao buscar torneios:", error);
-                loaderTournaments.classList.add('hidden');
-                list.innerHTML = `<p class="text-red-400 col-span-full">Erro ao carregar torneios: ${error.message}</p>`;
             });
         }
     </script>
