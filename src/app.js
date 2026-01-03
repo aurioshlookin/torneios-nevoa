@@ -155,22 +155,16 @@ const App = () => {
 
     // --- LÓGICA DE PARTIDAS E PONTUAÇÃO ---
 
-    // Função para gerar pareamento Suíço
     const generateSwissPairings = (participants, matches, roundNum, nextMatchId) => {
-        // 1. Calcula pontuação atual
         const scores = {};
         participants.forEach(p => scores[p.id] = 0);
         
         matches.forEach(m => {
             if (m.winner) {
-                scores[m.winner] += 3; // Vitória
-            } else if (m.winner === null && m.p1 && m.p2 && m.round < roundNum) {
-                // Empate? (O sistema atual não tem botão de empate, mas preparado)
+                scores[m.winner] += 3; 
             }
         });
 
-        // 2. Ordena por pontos
-        // Embaralha primeiro para desempate aleatório se pontos iguais
         let sorted = [...participants].sort(() => Math.random() - 0.5);
         sorted.sort((a, b) => scores[b.id] - scores[a.id]);
 
@@ -183,10 +177,8 @@ const App = () => {
             const p1 = sorted[i];
             let p2 = null;
 
-            // Tenta achar o próximo disponível
             for (let j = i + 1; j < sorted.length; j++) {
                 if (!paired.has(sorted[j].id)) {
-                    // TODO: Idealmente verifica se já jogaram contra, mas para MVP vamos parear direto por pontos
                     p2 = sorted[j];
                     break;
                 }
@@ -197,7 +189,6 @@ const App = () => {
                 paired.add(p1.id);
                 paired.add(p2.id);
             } else {
-                // Bye
                 newMatches.push({ round: roundNum, matchId: nextMatchId++, p1, p2: null, winner: p1.id, note: "Bye (Pontos)" });
                 paired.add(p1.id);
             }
@@ -219,17 +210,13 @@ const App = () => {
             if (matchIndex === -1) return;
 
             matches[matchIndex].winner = winnerId;
-            const winner = data.finalParticipants.find(p => p.id === winnerId); // finalParticipants agora pode conter times
+            const winner = data.finalParticipants.find(p => p.id === winnerId);
 
             const currentRound = matches[matchIndex].round;
             const matchesInRound = matches.filter(m => m.round === currentRound);
             const isRoundComplete = matchesInRound.every(m => m.winner);
 
             if (isRoundComplete) {
-                // Verifica se acabou o torneio
-                // No Suíço, geralmente definimos um número fixo de rounds ou até sobrar 1 invicto (que pode não acontecer)
-                // Vamos simplificar: Mata-mata acaba quando sobrar 1 match. Suíço continua até limite (ex: 3-5 rounds)
-                
                 const isElimination = data.structure === 'single_elim' || data.structure === 'double_elim';
                 
                 if (isElimination && matchesInRound.length === 1) {
@@ -238,19 +225,15 @@ const App = () => {
                     return;
                 }
 
-                // GERAÇÃO DA PRÓXIMA RODADA
                 const nextRoundNum = currentRound + 1;
                 let nextMatchId = Math.max(...matches.map(m => m.matchId)) + 1;
                 let nextRoundMatches = [];
 
                 if (data.structure === 'swiss') {
-                    // Limite de rounds para Suíço (log2 de players)
                     const maxRounds = Math.ceil(Math.log2(data.finalParticipants.length)) + 1;
                     
                     if (currentRound >= maxRounds) {
-                        // Fim do suíço, calcula campeão por pontos
-                        // Lógica simplificada: Quem ganhou a ultima ou tem mais pontos
-                        await updateDoc(ref, { matches, status: 'finished', winner: winner }); // Simplificado
+                        await updateDoc(ref, { matches, status: 'finished', winner: winner });
                         showToast("Fim das rodadas Suíças!");
                         return;
                     }
@@ -258,7 +241,6 @@ const App = () => {
                     nextRoundMatches = generateSwissPairings(data.finalParticipants, matches, nextRoundNum, nextMatchId);
                 
                 } else {
-                    // Mata-mata Padrão
                     const winners = matchesInRound.map(m => data.finalParticipants.find(p => p.id === m.winner));
                     for (let i = 0; i < winners.length; i += 2) {
                         if (i + 1 < winners.length) {
@@ -302,9 +284,8 @@ const App = () => {
             
             // 1. Filtrar Confirmados
             let confirmedPlayers = (data.participants || []).filter(p => p.status === 'confirmed');
-            if (confirmedPlayers.length < 2) throw new Error("Mínimo de 2 jogadores confirmados.");
-
-            // 2. Embaralhar Inicial (Se solicitado)
+            
+            // 2. Embaralhar Inicial
             if (config.shuffle === 'random' || config.shuffle === 'random_protected') {
                 for (let i = confirmedPlayers.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
@@ -312,8 +293,8 @@ const App = () => {
                 }
             }
 
-            // 3. Formação de Times (2x2, 3x3...)
-            let entities = []; // Podem ser players individuais ou times
+            // 3. Formação de Times (AGORA LÊ A PROPRIEDADE PARTNERS DO FIREBASE)
+            let entities = []; 
             let teamSize = 1;
             
             if (config.matchFormat === '2x2') teamSize = 2;
@@ -321,54 +302,82 @@ const App = () => {
             else if (config.matchFormat === '4x4') teamSize = 4;
 
             if (teamSize > 1) {
-                // Agrupa em times
-                let teamCount = 1;
-                for (let i = 0; i < confirmedPlayers.length; i += teamSize) {
-                    const chunk = confirmedPlayers.slice(i, i + teamSize);
-                    if (chunk.length < teamSize) {
-                        // Time incompleto (sobra)
-                        // Opção: Deixar como time menor ou descartar. Vamos deixar como time menor.
+                // Estratégia Híbrida:
+                // Prioridade 1: Quem já se registrou como Time (tem 'partners')
+                // Prioridade 2: Agrupar quem está sozinho (Solos)
+
+                const preFormedTeams = [];
+                const soloPlayers = [];
+                const processedIds = new Set();
+
+                // Identifica times pré-formados
+                confirmedPlayers.forEach(p => {
+                    if (processedIds.has(p.id)) return;
+
+                    if (p.partners && Array.isArray(p.partners) && p.partners.length > 0) {
+                        // É um time pré-definido
+                        const members = [p, ...p.partners];
+                        // Marca IDs como processados para não duplicar se o parceiro também estiver na lista principal
+                        members.forEach(m => processedIds.add(m.id));
+                        
+                        const teamName = `Time ${p.name}`; 
+                        preFormedTeams.push({
+                            id: `team-${p.id}`,
+                            name: teamName,
+                            isTeam: true,
+                            members: members
+                        });
+                    } else {
+                        soloPlayers.push(p);
                     }
-                    const teamName = `Time ${teamCount} (${chunk.map(p => p.name).join(', ')})`;
-                    entities.push({
-                        id: `team-${teamCount}`,
-                        name: teamName,
-                        isTeam: true,
-                        members: chunk
-                    });
-                    teamCount++;
+                });
+
+                // Adiciona times pré-formados às entidades
+                entities = [...preFormedTeams];
+
+                // Agrupa jogadores solo restantes
+                let teamCount = preFormedTeams.length + 1;
+                for (let i = 0; i < soloPlayers.length; i += teamSize) {
+                    const chunk = soloPlayers.slice(i, i + teamSize);
+                    if (chunk.length === teamSize) {
+                        const teamName = `Time ${teamCount} (${chunk.map(p => p.name).join(', ')})`;
+                        entities.push({
+                            id: `team-auto-${teamCount}`,
+                            name: teamName,
+                            isTeam: true,
+                            members: chunk
+                        });
+                        teamCount++;
+                    } else {
+                        // Sobras (poderiam ser reservas ou bye)
+                        // Por enquanto ignoramos ou criamos time incompleto
+                         const teamName = `Time ${teamCount} (${chunk.map(p => p.name).join(', ')})`;
+                        entities.push({
+                            id: `team-auto-${teamCount}`,
+                            name: teamName,
+                            isTeam: true,
+                            members: chunk,
+                            note: "Incompleto"
+                        });
+                    }
                 }
             } else {
-                // 1x1 ou FFA -> Entidades são os próprios players
+                // 1x1
                 entities = confirmedPlayers.map(p => ({ id: p.id, name: p.name, isTeam: false }));
             }
 
-            if (entities.length < 2) throw new Error(`Não há participantes suficientes para formar times de ${teamSize}.`);
+            if (entities.length < 2) throw new Error(`Participantes/Times insuficientes para iniciar.`);
 
             // 4. Geração de Partidas (Round 1)
             let matches = [];
             
             if (config.logicMode === 'elimination') {
-                if (config.structure === 'swiss') {
-                    // Sistema Suíço - Round 1 (Aleatório/Shuffle já feito)
-                    // Pareia 1vs2, 3vs4...
-                    const totalMatches = Math.floor(entities.length / 2);
-                    for(let i=0; i<totalMatches; i++) {
-                        matches.push({ round: 1, matchId: i+1, p1: entities[i*2], p2: entities[i*2+1], winner: null });
-                    }
-                    if (entities.length % 2 !== 0) {
-                        matches.push({ round: 1, matchId: totalMatches + 1, p1: entities[entities.length - 1], p2: null, winner: entities[entities.length - 1].id, note: "Bye" });
-                    }
-
-                } else {
-                    // Mata-mata Simples
-                    const totalMatches = Math.floor(entities.length / 2);
-                    for(let i=0; i<totalMatches; i++) {
-                        matches.push({ round: 1, matchId: i+1, p1: entities[i*2], p2: entities[i*2+1], winner: null });
-                    }
-                    if (entities.length % 2 !== 0) {
-                        matches.push({ round: 1, matchId: totalMatches + 1, p1: entities[entities.length - 1], p2: null, winner: entities[entities.length - 1].id, note: "Bye" });
-                    }
+                const totalMatches = Math.floor(entities.length / 2);
+                for(let i=0; i<totalMatches; i++) {
+                    matches.push({ round: 1, matchId: i+1, p1: entities[i*2], p2: entities[i*2+1], winner: null });
+                }
+                if (entities.length % 2 !== 0) {
+                    matches.push({ round: 1, matchId: totalMatches + 1, p1: entities[entities.length - 1], p2: null, winner: entities[entities.length - 1].id, note: "Bye" });
                 }
             }
 
@@ -377,7 +386,7 @@ const App = () => {
                 startedAt: new Date(),
                 ...config,
                 matches,
-                finalParticipants: entities // Salva quem está jogando (Times ou Players)
+                finalParticipants: entities 
             });
 
             setShowStart(false);
