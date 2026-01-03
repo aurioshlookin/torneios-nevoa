@@ -15,11 +15,6 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Firebase Compat -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <style>
         .glass-panel { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); }
         .toast-enter { transform: translateX(100%); opacity: 0; }
@@ -29,7 +24,42 @@
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col">
     <div id="root"></div>
 
+    <!-- Initialization Script (Module) -->
+    <!-- This sets up the global scope with React and Firebase Modular SDK functions -->
     <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth, signInWithCustomToken, signOut, onAuthStateChanged, 
+            setPersistence, browserLocalPersistence 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { 
+            getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // 1. Expose Firebase Modular functions globally so the bundle can use them
+        window.firebase = {
+            initializeApp,
+            auth: { 
+                getAuth, signInWithCustomToken, signOut, onAuthStateChanged, 
+                setPersistence, browserLocalPersistence 
+            },
+            firestore: { 
+                getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot 
+            }
+        };
+
+        // 2. Expose React globals
+        window.React = React;
+        window.useState = React.useState;
+        window.useEffect = React.useEffect;
+        window.createRoot = ReactDOM.createRoot;
+
+        // 3. Dispatch event to signal readiness
+        window.dispatchEvent(new Event('app-ready'));
+    </script>
+
+    <!-- App Loader -->
+    <script>
         const APP_VERSION = Date.now();
 
         const files = [
@@ -50,59 +80,34 @@
             try {
                 let combinedCode = "";
                 
-                // Header com declarações únicas
-                // IMPORTANTE: Se o código fonte (ex: app.js) também desestruturar essas variáveis,
-                // precisamos garantir que o loader remova essas linhas para evitar "Identifier has already been declared".
+                // Header with explicit destructuring from the globals we set up above
                 let bundleHeader = `
-                    const { useState, useEffect } = React;
-                    const { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } = firebase.firestore;
-                    const { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } = firebase.auth;
+                    const { useState, useEffect } = window.React;
+                    const { getFirestore, collection, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot } = window.firebase.firestore;
+                    const { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } = window.firebase.auth;
+                    const { initializeApp } = window.firebase;
                 `;
 
                 for (const file of files) {
                     const res = await fetch(`${file}?v=${APP_VERSION}`);
-                    if (!res.ok) throw new Error(`Falha ao carregar ${file}`);
+                    if (!res.ok) throw new Error(`Falha ao carregar ${file} (${res.status})`);
                     let code = await res.text();
 
-                    // LIMPEZA DE CÓDIGO
-                    
-                    // 1. Remove imports
+                    // CLEANUP: Remove imports/exports to merge into one scope
                     code = code.replace(/^import\s+.*$/gm, '');
-                    
-                    // 2. Remove exports
                     code = code.replace(/export\s+const\s+/g, 'const ');
                     code = code.replace(/export\s+default\s+\w+;?/g, '');
                     code = code.replace(/export\s+\{.*?\};?/g, '');
 
-                    // 3. Remove redeclarações de React e Firebase que já estão no header
-                    // Remove: const { useState ... } = React;
-                    code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*React;/g, '');
-                    code = code.replace(/const\s+\{\s*useState\s*\}\s*=\s*React;/g, ''); // Caso específico comum
-                    
-                    // Remove: const { ... } = firebase.firestore; ou window.firebase.firestore;
+                    // REMOVE REDECLARATIONS:
+                    // If files try to destructure React or Firebase again, remove those lines
+                    code = code.replace(/const\s+\{\s*useState.*\}\s*=\s*React;/g, '');
                     code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*(?:window\.)?firebase\.firestore;/g, '');
-                    
-                    // Remove: const { ... } = firebase.auth; ou window.firebase.auth;
                     code = code.replace(/const\s+\{\s*[\w\s,]+\s*\}\s*=\s*(?:window\.)?firebase\.auth;/g, '');
-
-                    // 4. Remove inicialização duplicada do Firebase se existir (em src/config/firebase.js)
-                    // Se o arquivo tenta declarar 'const db =' mas já temos db global, isso daria erro se usássemos let/const no header.
-                    // Como no header usamos const, não podemos redeclarar.
-                    // O firebase.js geralmente faz: const app = ... const db = ...
-                    // Vamos deixar o firebase.js rodar, mas precisamos garantir que ele não conflite.
-                    // Se src/config/firebase.js exporta db e auth, e nós usamos const db = ... no header, vai dar erro.
-                    
-                    // CORREÇÃO: Vamos remover a declaração de db e auth do bundleHeader se vamos deixar o firebase.js criar.
-                    // OU (Melhor): Vamos limpar o firebase.js para não declarar se já existir.
-                    // Dado que estamos num ambiente no-build frágil, vamos adotar a estratégia:
-                    // O header declara as FUNÇÕES. As INSTÂNCIAS (app, db, auth) são criadas pelo src/config/firebase.js.
                     
                     combinedCode += `\n// --- ${file} ---\n${code}\n`;
                 }
 
-                // Ajuste no Header: Não declarar db e auth aqui, deixar o arquivo de config criar.
-                // Apenas desestruturar as classes/funções estáticas.
-                
                 const output = Babel.transform(bundleHeader + combinedCode, { 
                     presets: ['react'],
                     filename: 'app_bundle.js' 
@@ -114,11 +119,22 @@
 
             } catch (e) {
                 console.error("Loader Error:", e);
-                document.body.innerHTML = `<div class="p-10 text-red-500 text-center"><h1>Erro de Carregamento</h1><p>${e.message}</p></div>`;
+                document.body.innerHTML = `
+                    <div class="p-10 text-red-500 text-center bg-slate-800 min-h-screen flex flex-col items-center justify-center">
+                        <i class="fas fa-bug text-4xl mb-4"></i>
+                        <h1 class="text-xl font-bold mb-2">Erro de Carregamento</h1>
+                        <p class="mb-4">${e.message}</p>
+                        <button onclick="location.reload()" class="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-500">Tentar Novamente</button>
+                    </div>`;
             }
         }
-        
-        loadApp();
+
+        // Start loading ONLY when dependencies are ready
+        if (window.firebase && window.firebase.firestore) {
+            loadApp();
+        } else {
+            window.addEventListener('app-ready', loadApp);
+        }
     </script>
 </body>
 </html>
