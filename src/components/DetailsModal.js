@@ -2,27 +2,29 @@ import React, { useState } from 'react';
 import { FORMAT_INFO } from '../config/constants.js';
 
 const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user, hasPermission, onAddBot, onOpenBrackets }) => {
-    const [botName, setBotName] = useState('');
+    // Removemos o state local 'botName' pois agora é automático
 
     if (!tournament) return null;
 
     const { title, date, description, status, participants, matchFormat, id, logicMode } = tournament;
     
     // Status Badge e Cores
-    let statusTag = <span className="px-2 py-1 rounded text-xs font-bold bg-green-500/10 text-green-500 border border-green-500/20">ABERTO</span>;
-    if (status === 'pending') statusTag = <span className="text-yellow-500 animate-pulse">PROCESSANDO...</span>;
-    if (status === 'started') statusTag = <span className="text-red-500 animate-pulse font-bold">🔴 EM ANDAMENTO</span>;
-    if (status === 'finished') statusTag = <span className="text-blue-400 font-bold bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">🏆 FINALIZADO</span>;
+    let statusTag = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">ABERTO</span>;
+    if (status === 'pending') statusTag = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-500 animate-pulse">PROCESSANDO</span>;
+    if (status === 'started') statusTag = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">AO VIVO</span>;
+    if (status === 'finished') statusTag = <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">FINALIZADO</span>;
 
     const parts = participants || [];
     const confirmed = parts.filter(p => p.status === 'confirmed');
     const maybe = parts.filter(p => p.status === 'maybe');
     const declined = parts.filter(p => p.status === 'declined');
 
+    // Nova função de adicionar bot automático
     const handleAddBot = () => {
-        if (!botName.trim()) return;
-        onAddBot(id, botName);
-        setBotName('');
+        // Conta quantos bots já existem para gerar o nome
+        const botCount = parts.filter(p => p.isBot).length + 1;
+        const generatedName = `Bot ${botCount}`;
+        onAddBot(id, generatedName);
     };
 
     const renderList = (list, title, colorClass) => (
@@ -57,9 +59,7 @@ const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user
                     </div>
                     
                     <div className="mt-4 flex gap-2 flex-wrap">
-                        {/* MUDANÇA AQUI: Removemos a restrição 'logicMode === elimination'. 
-                            Agora o botão aparece sempre que estiver iniciado/finalizado. 
-                            O BracketsModal vai tratar o que mostrar. */}
+                        {/* Botão de Chaves aparece se iniciado ou finalizado */}
                         {(status === 'started' || status === 'finished') && (
                             <button onClick={() => onOpenBrackets(tournament)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold shadow transition flex items-center gap-2">
                                 <i className="fas fa-sitemap"></i> 
@@ -96,20 +96,13 @@ const DetailsModal = ({ tournament, onClose, onJoin, onDelete, onOpenStart, user
                         <div className="border-t border-slate-700 pt-4">
                             {hasPermission && status !== 'started' && status !== 'finished' ? (
                                 <div className="bg-slate-900/50 p-3 rounded border border-slate-700">
-                                    <label className="text-xs font-bold text-slate-400 mb-2 block">Adicionar Bot de Teste</label>
-                                    <div className="flex gap-2">
-                                        <input 
-                                            type="text" 
-                                            placeholder="Nome (ex: Bot Test 1)" 
-                                            className="flex-grow bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white focus:border-green-500 outline-none"
-                                            value={botName}
-                                            onChange={(e) => setBotName(e.target.value)}
-                                        />
-                                        <button onClick={handleAddBot} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold transition">
-                                            Adicionar
-                                        </button>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-xs font-bold text-slate-400">Adicionar Bot de Teste</label>
+                                        <span className="text-[10px] text-slate-500">Geração Automática</span>
                                     </div>
-                                    <p className="text-[10px] text-slate-500 mt-1">Útil para testar chaveamento.</p>
+                                    <button onClick={handleAddBot} className="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded text-sm font-bold transition flex justify-center items-center gap-2 border border-slate-600 hover:border-slate-500">
+                                        <i className="fas fa-robot text-yellow-500"></i> Adicionar Bot (+1)
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="text-center text-slate-500 text-sm italic">
